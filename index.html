@@ -1,206 +1,1625 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Luau Crypto Docs</title>
-  <link href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@latest/index.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css" rel="stylesheet"/>
-  <style>
-    :root {
-      --bg: #1e1e2f;
-      --text: #e0e0f0;
-      --accent: #8be9fd;
-      --code-bg: #2b2b3d;
-      --section-bg: #282838;
-      --font: "Inter Variable", sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luau Cryptography - Fastest Crypto Library for Roblox</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
-      line-height: 1.6;
-      padding: 0 1.5rem;
-    }
+        :root {
+            --bg-primary: #0b0b0b;
+            --bg-secondary: #151515;
+            --bg-tertiary: #1a1a1a;
+            --bg-card: #202020;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #888888;
+            --accent: #4285f4;
+            --accent-hover: #3367d6;
+            --success: #34a853;
+            --warning: #fbbc04;
+            --danger: #ea4335;
+            --border: #333333;
+            --border-light: #444444;
+        }
 
-    header {
-      text-align: center;
-      padding: 2rem 0;
-    }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
 
-    header h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.3rem;
-      color: var(--accent);
-    }
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
 
-    header p {
-      font-size: 1.1rem;
-      opacity: 0.8;
-    }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+            width: var(--scroll-progress, 0%);
+        }
 
-    nav {
-      margin: 2rem auto;
-      max-width: 800px;
-      display: flex;
-      justify-content: space-around;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    nav a {
-      text-decoration: none;
-      color: var(--accent);
-      padding: 0.3rem 0.6rem;
-      border-radius: 5px;
-      transition: background 0.2s;
-    }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
-    nav a:hover {
-      background: var(--section-bg);
-    }
+        .logo i {
+            color: var(--accent);
+            font-size: 1.8rem;
+        }
 
-    section {
-      max-width: 800px;
-      margin: 2rem auto;
-      background: var(--section-bg);
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
-    }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
 
-    section h2 {
-      border-bottom: 1px solid #444;
-      padding-bottom: 0.5rem;
-      margin-bottom: 1rem;
-      color: #fff;
-    }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
 
-    pre {
-      background: var(--code-bg);
-      padding: 1rem;
-      border-radius: 8px;
-      overflow-x: auto;
-    }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            transform: translateY(-1px);
+        }
 
-    code {
-      font-family: 'Fira Code', monospace;
-      font-size: 0.95rem;
-    }
+        .nav-links a.active {
+            background: linear-gradient(135deg, var(--accent), rgba(66, 133, 244, 0.8));
+            color: white;
+        }
 
-    footer {
-      text-align: center;
-      padding: 2rem 0;
-      font-size: 0.9rem;
-      opacity: 0.6;
-    }
+        /* Mobile menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
 
-    .note {
-      background: #444860;
-      padding: 1rem;
-      border-left: 5px solid var(--accent);
-      border-radius: 8px;
-      margin: 1rem 0;
-    }
+        /* Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
 
-    .toggle-dark {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      background: var(--section-bg);
-      border: none;
-      color: var(--text);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-  </style>
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 0;
+            min-height: calc(100vh - 70px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 2rem 0;
+            position: sticky;
+            top: 70px;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-title {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0 1.5rem;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-nav a {
+            display: block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border-left-color: var(--accent);
+            font-weight: 600;
+        }
+
+        .sidebar-nav a.active {
+            background: linear-gradient(90deg, var(--bg-tertiary), rgba(66, 133, 244, 0.1));
+            box-shadow: inset 0 0 0 1px rgba(66, 133, 244, 0.2);
+        }
+
+        /* Content */
+        .content {
+            background: var(--bg-primary);
+            padding: 3rem;
+            overflow-y: auto;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .page-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            line-height: 1.5;
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-bottom: 4rem;
+            padding: 3rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-light);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent);
+        }
+
+        /* Quick Links */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .quick-link {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .quick-link:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .quick-link i {
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .quick-link h3 {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .quick-link p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Code Examples */
+        .code-section {
+            margin-bottom: 4rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .code-example {
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .code-header {
+            background: var(--bg-tertiary);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .copy-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .code-example pre {
+            margin: 0;
+            padding: 1.5rem;
+            overflow-x: auto;
+            background: transparent;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .code-example code {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', monospace;
+            background: transparent;
+        }
+
+        /* API Categories */
+        .api-categories {
+            margin-bottom: 4rem;
+        }
+
+        .api-category {
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .api-category-header {
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .api-category-header h3 {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .api-category-header i {
+            color: var(--accent);
+        }
+
+        .function-count {
+            background: var(--accent);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .api-category-content {
+            padding: 0;
+        }
+
+        .api-function {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .api-function:last-child {
+            border-bottom: none;
+        }
+
+        .api-function h4 {
+            color: var(--accent);
+            font-family: 'SF Mono', monospace;
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .api-function p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Demo Section */
+        .demo-section {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .demo-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .input-group label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .input-group input,
+        .input-group select,
+        .input-group textarea {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.8rem;
+            color: var(--text-primary);
+            font-family: 'SF Mono', monospace;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .demo-output {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            min-height: 100px;
+            font-family: 'SF Mono', monospace;
+            color: var(--success);
+            word-break: break-all;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Credits */
+        .credits {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .credits h3 {
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .credits-list {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .credit-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .credit-name {
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 1rem;
+        }
+
+        .credit-role {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .sidebar.mobile-open {
+                display: block;
+                position: fixed;
+                top: 70px;
+                left: 0;
+                width: 280px;
+                z-index: 999;
+                height: calc(100vh - 70px);
+            }
+
+            .content {
+                padding: 2rem;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .demo-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .content {
+                padding: 1rem;
+            }
+
+            .hero {
+                padding: 2rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+        }
+
+        /* Section highlighting */
+        section[id] {
+            scroll-margin-top: 90px;
+            transition: all 0.3s ease;
+            min-height: 150px; /* Reduced minimum height for better detection */
+        }
+
+        section[id].highlighted {
+            border-left: 4px solid var(--accent);
+            padding-left: calc(3rem - 4px);
+            background: linear-gradient(90deg, rgba(66, 133, 244, 0.05), transparent);
+        }
+
+        .api-category[id] {
+            scroll-margin-top: 90px;
+            transition: all 0.3s ease;
+            min-height: 100px; /* Reduced minimum height */
+        }
+
+        .api-category[id].highlighted {
+            border-left: 4px solid var(--accent);
+            border-radius: 8px 0 0 8px;
+            background: linear-gradient(90deg, rgba(66, 133, 244, 0.05), transparent);
+        }
+
+        /* Syntax highlighting */
+        .token.keyword {
+            color: #ff79c6;
+        }
+
+        .token.string {
+            color: #f1fa8c;
+        }
+
+        .token.comment {
+            color: #6272a4;
+        }
+
+        .token.function {
+            color: #50fa7b;
+        }
+
+        .token.number {
+            color: #bd93f9;
+        }
+
+        .token.operator {
+            color: #ff79c6;
+        }
+        .token.keyword {
+            color: #ff79c6;
+        }
+
+        .token.string {
+            color: #f1fa8c;
+        }
+
+        .token.comment {
+            color: #6272a4;
+        }
+
+        .token.function {
+            color: #50fa7b;
+        }
+
+        .token.number {
+            color: #bd93f9;
+        }
+
+        .token.operator {
+            color: #ff79c6;
+        }
+    </style>
 </head>
 <body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="#overview" class="logo">
+                <i class="fas fa-shield-alt"></i>
+                Luau Cryptography
+            </a>
+            <nav class="nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#installation">Installation</a>
+                <a href="#api-reference">API Reference</a>
+                <a href="#demo">Demo</a>
+            </nav>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
 
-<button class="toggle-dark" onclick="toggleDark()">🌓</button>
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Getting Started</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#overview" class="active">Overview</a></li>
+                    <li><a href="#installation">Installation</a></li>
+                    <li><a href="#quick-start">Quick Start</a></li>
+                </ul>
+            </div>
 
-<header>
-  <h1>Luau Cryptography</h1>
-  <p>Documentation for secure, fast, and clear cryptographic modules written in Luau</p>
-</header>
+            <div class="sidebar-section">
+                <div class="sidebar-title">API Reference</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#hashing">Hashing (20)</a></li>
+                    <li><a href="#encryption">Encryption (3)</a></li>
+                    <li><a href="#signatures">Digital Signatures (3)</a></li>
+                    <li><a href="#utilities">Utilities (10+)</a></li>
+                    <li><a href="#checksums">Checksums (2)</a></li>
+                </ul>
+            </div>
 
-<nav>
-  <a href="#hash">Hash Functions</a>
-  <a href="#encryption">Encryption</a>
-  <a href="#keys">Key Management</a>
-  <a href="#api">API Reference</a>
-  <a href="#security">Security Notes</a>
-</nav>
+            <div class="sidebar-section">
+                <div class="sidebar-title">Interactive</div>
+                <ul class="sidebar-nav">
+                    <li><a href="#demo">Live Demo</a></li>
+                </ul>
+            </div>
+        </aside>
 
-<section id="hash">
-  <h2>🔐 Hash Functions</h2>
-  <p>Provides implementations of secure one-way functions like SHA-2, SHA-3, and BLAKE2b/3.</p>
-  <pre><code class="language-lua">local hash = require("SHA2_256")
-local digest = hash:Digest("hello world")
-print(digest)</code></pre>
-</section>
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Hero Section -->
+            <section id="overview" class="hero">
+                <h1>Luau Cryptography</h1>
+                <p class="page-subtitle">The fastest, most advanced cryptography library for Roblox. Production ready with 28+ functions, used in popular games and trusted by developers.</p>
+                
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">28+</span>
+                        <span class="stat-label">Functions</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">15+</span>
+                        <span class="stat-label">Algorithms</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">100%</span>
+                        <span class="stat-label">Tested</span>
+                    </div>
+                </div>
 
-<section id="encryption">
-  <h2>🔒 Encryption</h2>
-  <p>Symmetric AES-based encryption with secure padding and IV generation.</p>
-  <pre><code class="language-lua">local aes = require("AES")
-local ciphertext = aes:Encrypt("secret", key)
-local plaintext = aes:Decrypt(ciphertext, key)</code></pre>
-</section>
+                <div class="hero-actions">
+                    <a href="#installation" class="btn btn-primary">
+                        <i class="fas fa-rocket"></i> Get Started
+                    </a>
+                    <a href="#demo" class="btn btn-secondary">
+                        <i class="fas fa-play"></i> Try Demo
+                    </a>
+                </div>
+            </section>
 
-<section id="keys">
-  <h2>🔑 Key Management</h2>
-  <p>Use securely derived keys. Consider using PBKDF2 or HKDF for password-based secrets.</p>
-  <div class="note">
-    Never store plain keys. Always zero buffers after use.
-  </div>
-</section>
+            <!-- Quick Links -->
+            <section class="quick-links">
+                <a href="https://devforum.roblox.com/t/fastest-cryptography-library-for-roblox/3680271" class="quick-link" target="_blank" rel="noopener">
+                    <i class="fab fa-discourse"></i>
+                    <h3>DevForum Documentation</h3>
+                    <p>Complete documentation and community discussion</p>
+                </a>
+                <a href="https://github.com/daily3014/rbx-cryptography" class="quick-link" target="_blank" rel="noopener">
+                    <i class="fab fa-github"></i>
+                    <h3>GitHub Repository</h3>
+                    <p>Source code, issues, and contributions</p>
+                </a>
+                <a href="https://wally.run/package/daily3014/cryptography" class="quick-link" target="_blank" rel="noopener">
+                    <i class="fas fa-package"></i>
+                    <h3>Wally Package</h3>
+                    <p>Install with Wally package manager</p>
+                </a>
+                <a href="https://pesde.dev/packages/daily3014/cryptography" class="quick-link" target="_blank" rel="noopener">
+                    <i class="fas fa-cube"></i>
+                    <h3>Pesde Package</h3>
+                    <p>Install with Pesde package manager</p>
+                </a>
+            </section>
 
-<section id="api">
-  <h2>📘 API Reference</h2>
-  <p>Each module uses PascalCase naming and returns a class-like table. Example:</p>
-  <pre><code class="language-lua">local sha3 = require("SHA3_256")
+            <!-- Installation & Quick Start -->
+            <section id="installation" class="code-section">
+                <h2 class="section-title">Installation & Basic Usage</h2>
+                
+                <div class="code-example">
+                    <div class="code-header">
+                        <span class="code-title">Installation & Basic Usage</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-lua">-- Require the library
+local Cryptography = require(game:GetService("ReplicatedStorage").Cryptography)
 
--- API
-sha3:Digest(data: string): string</code></pre>
-</section>
+-- Module shortcuts for cleaner code
+local Hashing = Cryptography.Hashing
+local Encryption = Cryptography.Encryption
+local Utilities = Cryptography.Utilities
+local Verification = Cryptography.Verification
+local Checksums = Cryptography.Checksums
 
-<section id="security">
-  <h2>🛡️ Security Notes</h2>
-  <ul>
-    <li>Never hardcode secret keys</li>
-    <li>Use secure random generators</li>
-    <li>Prefer SHA-3 or BLAKE3 where possible</li>
-    <li>Validate data lengths and encoding</li>
-  </ul>
-</section>
+-- Hash something quickly
+local MessageBuffer = buffer.fromstring("Hello World!")
+local Hash = Hashing.SHA2.SHA256(MessageBuffer)
+print("SHA256:", Hash) -- Output is already in hex format
 
-<footer>
-  &copy; 2025 LuauCrypto Docs. Secure your code.
-</footer>
+-- Encrypt with AEAD (ChaCha20-Poly1305)
+local Cryptography = require(game:GetService("ReplicatedStorage").Cryptography)
+local Encryption = Cryptography.Encryption
+local PlainText = buffer.fromstring("Hello World")
+local Key = buffer.fromstring(string.rep("k", 32))
+local Nonce = buffer.fromstring(string.rep("n", 12))
+local AAD = buffer.fromstring("additional data")
+local Ciphertext, Tag = Encryption.AEAD.Encrypt(PlainText, Key, Nonce, AAD)
+local DecryptedText = Encryption.AEAD.Decrypt(Ciphertext, Key, Nonce, Tag, AAD)</code></pre>
+                </div>
 
-<script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
-<script>
-  function toggleDark() {
-    const root = document.documentElement;
-    const dark = getComputedStyle(root).getPropertyValue('--bg') === '#1e1e2f';
-    if (dark) {
-      root.style.setProperty('--bg', '#f8f8f8');
-      root.style.setProperty('--text', '#222');
-      root.style.setProperty('--accent', '#0066cc');
-      root.style.setProperty('--code-bg', '#f0f0f0');
-      root.style.setProperty('--section-bg', '#fff');
-    } else {
-      root.style.setProperty('--bg', '#1e1e2f');
-      root.style.setProperty('--text', '#e0e0f0');
-      root.style.setProperty('--accent', '#8be9fd');
-      root.style.setProperty('--code-bg', '#2b2b3d');
-      root.style.setProperty('--section-bg', '#282838');
-    }
-  }
-</script>
+                <div class="code-example" id="quick-start">
+                    <div class="code-header">
+                        <span class="code-title">Quick Start - Password Hashing</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-lua">-- Quick Start: Secure password hashing
+local Cryptography = require(game:GetService("ReplicatedStorage").Cryptography)
+local SHA256 = Cryptography.Hashing.SHA2.SHA256
+
+-- Hash a password with salt
+local function HashPassword(Password, Salt)
+    local PasswordBuffer = buffer.fromstring(Password)
+    local SaltBuffer = buffer.fromstring(Salt or "defaultsalt")
+    local Hash = SHA256(PasswordBuffer, SaltBuffer)
+    return Hash -- Output is already in hex format
+end
+
+-- Example usage
+local UserPassword = "MySecurePassword123"
+local HashedPassword = HashPassword(UserPassword, "randomsalt")
+print("Hashed password:", HashedPassword)
+
+-- Verify password by comparing hashes
+local function VerifyPassword(InputPassword, StoredHash, Salt)
+    local InputHash = HashPassword(InputPassword, Salt)
+    return InputHash == StoredHash
+end
+
+local IsValid = VerifyPassword("MySecurePassword123", HashedPassword, "randomsalt")
+print("Password is valid:", IsValid)</code></pre>
+                </div>
+
+                <div class="code-example">
+                    <div class="code-header">
+                        <span class="code-title">Advanced AES Encryption</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-lua">-- Advanced AES encryption with CBC mode and PKCS7 padding
+local AES = Cryptography.Encryption.AES
+
+-- Create AES profile with specific mode and padding
+local AESProfile = AES.New(
+    buffer.fromstring("A24ByteEncryptionKeyHere"),
+    AES.Modes.CBC,
+    AES.Pads.Pkcs7
+)
+
+local Message = buffer.fromstring("Confidential information here")
+local InitVector = buffer.fromstring("0123456789ABCDEF")
+
+-- Encrypt and decrypt
+local Encrypted = AESProfile:Encrypt(Message, nil, InitVector)
+local Decrypted = AESProfile:Decrypt(Encrypted, nil, InitVector)
+
+print("Message secured and verified!")</code></pre>
+                </div>
+
+                <div class="code-example">
+                    <div class="code-header">
+                        <span class="code-title">Digital Signatures with EdDSA</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code class="language-lua">-- Digital signature generation and verification
+local EdDSA = Cryptography.Verification.EdDSA
+
+-- Generate keypair
+local PrivateKey = Cryptography.Utilities.RandomString(32)
+local PublicKey = EdDSA.PublicKey(PrivateKey)
+
+-- Sign a message
+local Message = buffer.fromstring("Important message")
+local Signature = EdDSA.Sign(PrivateKey, PublicKey, Message)
+
+-- Verify signature
+local IsValid = EdDSA.Verify(PublicKey, Message, Signature)
+print("Signature valid:", IsValid)</code></pre>
+                </div>
+            </section>
+
+            <!-- API Reference -->
+            <section id="api-reference" class="api-categories">
+                <h2 class="section-title">API Reference</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Complete documentation for all 28+ functions organized by category</p>
+
+                <!-- Hashing -->
+                <div class="api-category" id="hashing">
+                    <div class="api-category-header">
+                        <h3>
+                            <i class="fas fa-fingerprint"></i>
+                            Hashing Functions
+                            <span class="function-count">20</span>
+                        </h3>
+                    </div>
+                    <div class="api-category-content">
+                        <div class="api-function">
+                            <h4>SHA2.SHA256(Message: buffer, Salt?: buffer) → string</h4>
+                            <p>Computes SHA256 hash with optional salt. Most commonly used cryptographic hash function.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>SHA3.SHA3_256(Message: buffer) → string</h4>
+                            <p>Modern SHA3-256 hash function. Latest standard approved by NIST.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>Blake3.Digest(Message: buffer, Length?: number) → string</h4>
+                            <p>Fastest cryptographic hash function available. Optimized for performance.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>Blake3.DigestKeyed(Key: buffer, Message: buffer, Length?: number) → string</h4>
+                            <p>Keyed Blake3 hash for authenticated hashing scenarios.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>HMAC(Message: buffer, Key: buffer, HashFn: function, BlockSize: number) → string</h4>
+                            <p>Hash-based message authentication code. Works with any underlying hash function.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>XXH32(Message: buffer, Seed?: number) → number</h4>
+                            <p>Ultra-fast non-cryptographic hash function. Perfect for hash tables and checksums.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Encryption -->
+                <div class="api-category" id="encryption">
+                    <div class="api-category-header">
+                        <h3>
+                            <i class="fas fa-lock"></i>
+                            Encryption Functions
+                            <span class="function-count">3</span>
+                        </h3>
+                    </div>
+                    <div class="api-category-content">
+                        <div class="api-function">
+                            <h4>ChaCha20(Data: buffer, Key: buffer, Nonce: buffer, Counter?: number, Rounds?: number) → buffer</h4>
+                            <p>ChaCha20 stream cipher encryption/decryption. Modern, fast, and secure.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>AES.New(Key: buffer, Mode: AESMode, Padding: AESPadding) → AESProfile</h4>
+                            <p>Create AES encryption profile with specified mode and padding scheme.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>AEAD.Encrypt(Message: buffer, Key: buffer, Nonce: buffer, AAD?: buffer, Rounds?: number) → (buffer, buffer)</h4>
+                            <p>ChaCha20-Poly1305 authenticated encryption. Returns ciphertext and authentication tag.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>AEAD.Decrypt(Ciphertext: buffer, Key: buffer, Nonce: buffer, Tag: buffer, AAD?: buffer, Rounds?: number) → buffer?</h4>
+                            <p>ChaCha20-Poly1305 authenticated decryption. Returns plaintext or nil if authentication fails.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Digital Signatures -->
+                <div class="api-category" id="signatures">
+                    <div class="api-category-header">
+                        <h3>
+                            <i class="fas fa-certificate"></i>
+                            Digital Signatures
+                            <span class="function-count">3</span>
+                        </h3>
+                    </div>
+                    <div class="api-category-content">
+                        <div class="api-function">
+                            <h4>EdDSA.PublicKey(SecretKey: buffer) → buffer</h4>
+                            <p>Generate public key from secret key using Ed25519 algorithm.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>EdDSA.Sign(SecretKey: buffer, PublicKey: buffer, Message: buffer) → buffer</h4>
+                            <p>Create digital signature for a message using Ed25519.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>EdDSA.Verify(PublicKey: buffer, Message: buffer, Signature: buffer) → boolean</h4>
+                            <p>Verify digital signature authenticity. Returns true if signature is valid.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Utilities -->
+                <div class="api-category" id="utilities">
+                    <div class="api-category-header">
+                        <h3>
+                            <i class="fas fa-tools"></i>
+                            Utility Functions
+                            <span class="function-count">10+</span>
+                        </h3>
+                    </div>
+                    <div class="api-category-content">
+                        <div class="api-function">
+                            <h4>Base64.Encode(Input: buffer) → string</h4>
+                            <p>Encode binary data to Base64 string representation.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>Base64.Decode(Input: buffer) → string</h4>
+                            <p>Decode Base64 string to binary data.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>RandomString(Length: number) → string</h4>
+                            <p>Generate cryptographically secure random string of specified length.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>Conversions.ToHex(Buffer: buffer) → string</h4>
+                            <p>Convert buffer to hexadecimal string representation.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>Conversions.FromHex(Hex: string) → buffer</h4>
+                            <p>Convert hexadecimal string to buffer.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Checksums -->
+                <div class="api-category" id="checksums">
+                    <div class="api-category-header">
+                        <h3>
+                            <i class="fas fa-check-circle"></i>
+                            Checksum Functions
+                            <span class="function-count">2</span>
+                        </h3>
+                    </div>
+                    <div class="api-category-content">
+                        <div class="api-function">
+                            <h4>CRC32(Message: buffer, Mode?: "Jam" | "Iso", Hex?: boolean)</h4>
+                            <p>Calculate CRC32 checksum with optional mode and output format.</p>
+                        </div>
+                        <div class="api-function">
+                            <h4>Adler(Message: buffer)</h4>
+                            <p>Calculate Adler checksum. Faster than CRC32 but less reliable.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive Demo -->
+            <section id="demo" class="code-section">
+                <h2 class="section-title">Interactive Demo</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Try out the cryptographic functions right in your browser</p>
+
+                <div class="demo-section">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);"><i class="fas fa-fingerprint"></i> Hash Functions Demo</h3>
+                    <div class="demo-controls">
+                        <div class="input-group">
+                            <label for="hash-input">Input Text:</label>
+                            <textarea id="hash-input" placeholder="Enter text to hash..." rows="4">Hello World!</textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="hash-algorithm">Algorithm:</label>
+                            <select id="hash-algorithm">
+                                <option value="sha256">SHA256 (most common)</option>
+                                <option value="sha1">SHA1 (legacy)</option>
+                                <option value="md5">MD5 (fast, non-crypto)</option>
+                                <option value="sha512">SHA512 (high security)</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="performHash()" style="margin-top: 1rem;">
+                                <i class="fas fa-cog"></i> Calculate Hash
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Hash Output:</label>
+                        <div class="demo-output" id="hash-output">Click "Calculate Hash" to see the result...</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);"><i class="fas fa-code"></i> Base64 Encoder/Decoder</h3>
+                    <div class="demo-controls">
+                        <div class="input-group">
+                            <label for="base64-input">Input:</label>
+                            <textarea id="base64-input" placeholder="Enter text or base64..." rows="3">You forget a thousand things every day, pal. Make sure this is one of them</textarea>
+                        </div>
+                        <div class="input-group">
+                            <button class="btn btn-primary" onclick="encodeBase64()">
+                                <i class="fas fa-arrow-up"></i> Encode to Base64
+                            </button>
+                            <button class="btn btn-secondary" onclick="decodeBase64()">
+                                <i class="fas fa-arrow-down"></i> Decode from Base64
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Output:</label>
+                        <div class="demo-output" id="base64-output">Use the buttons above to encode or decode...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Credits -->
+            <section class="credits">
+                <h3>Made with ❤️ by the Community</h3>
+                <div class="credits-list">
+                    <div class="credit-item">
+                        <div class="credit-name">Xoifail</div>
+                        <div class="credit-role">Creator</div>
+                    </div>
+                    <div class="credit-item">
+                        <div class="credit-name">daily3014</div>
+                        <div class="credit-role">Co-Creator</div>
+                    </div>
+                    <div class="credit-item">
+                        <div class="credit-name">boatbomber</div>
+                        <div class="credit-role">Contributor</div>
+                    </div>
+                    <div class="credit-item">
+                        <div class="credit-name">Sythivo</div>
+                        <div class="credit-role">Contributor</div>
+                    </div>
+                    <div class="credit-item">
+                        <div class="credit-name">Green</div>
+                        <div class="credit-role">Contributor</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+    <script>
+        // Error prevention for external scripts - prevents adngin errors
+        (function() {
+            'use strict';
+            
+            // Suppress external script errors that we can't control
+            window.addEventListener('error', function(e) {
+                if (e.filename && (
+                    e.filename.includes('adengine') || 
+                    e.filename.includes('btloader') ||
+                    e.filename.includes('adngin') ||
+                    e.filename.includes('uic_prov') ||
+                    e.filename.includes('snigelweb')
+                )) {
+                    e.preventDefault();
+                    return false;
+                }
+            }, true);
+
+            // Prevent undefined function calls
+            window.adngin = window.adngin || function() { /* no-op */ };
+            
+            // Suppress console errors from external scripts
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('adngin') || 
+                    message.includes('adengine') || 
+                    message.includes('btloader') ||
+                    message.includes('snigelweb')) {
+                    return; // Suppress these errors
+                }
+                originalConsoleError.apply(console, args);
+            };
+        })();
+
+        // Mobile menu functionality
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('mobile-open');
+        }
+
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-example').querySelector('code');
+            const text = codeBlock.textContent;
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopySuccess(button);
+                }).catch(() => {
+                    fallbackCopyText(text, button);
+                });
+            } else {
+                fallbackCopyText(text, button);
+            }
+        }
+
+        function fallbackCopyText(text, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopySuccess(button);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                button.innerHTML = '<i class="fas fa-times"></i> Failed';
+                button.style.background = 'var(--danger)';
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showCopySuccess(button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            button.style.background = 'var(--success)';
+            
+            setTimeout(() => {
+                button.innerHTML = 'Copy';
+                button.style.background = 'var(--accent)';
+            }, 2000);
+        }
+
+        // Hash demo functionality
+        function performHash() {
+            const input = document.getElementById('hash-input').value;
+            const algorithm = document.getElementById('hash-algorithm').value;
+            const output = document.getElementById('hash-output');
+            
+            if (!input.trim()) {
+                output.innerHTML = '<span style="color: var(--warning)">Please enter some text to hash.</span>';
+                return;
+            }
+            
+            let hash;
+            try {
+                switch(algorithm) {
+                    case 'sha256':
+                        hash = CryptoJS.SHA256(input).toString();
+                        break;
+                    case 'sha1':
+                        hash = CryptoJS.SHA1(input).toString();
+                        break;
+                    case 'md5':
+                        hash = CryptoJS.MD5(input).toString();
+                        break;
+                    case 'sha512':
+                        hash = CryptoJS.SHA512(input).toString();
+                        break;
+                    default:
+                        hash = CryptoJS.SHA256(input).toString();
+                }
+                
+                output.innerHTML = `<strong style="color: var(--accent)">${algorithm.toUpperCase()}:</strong><br><span style="color: var(--success); word-break: break-all; font-family: monospace;">${hash}</span>`;
+            } catch (error) {
+                output.innerHTML = `<span style="color: var(--danger)">Error calculating hash: ${error.message}</span>`;
+            }
+        }
+
+        // Base64 demo functionality
+        function encodeBase64() {
+            const input = document.getElementById('base64-input').value;
+            const output = document.getElementById('base64-output');
+            
+            if (!input.trim()) {
+                output.innerHTML = '<span style="color: var(--warning)">Please enter some text to encode.</span>';
+                return;
+            }
+            
+            try {
+                const encoded = btoa(unescape(encodeURIComponent(input)));
+                output.innerHTML = `<strong style="color: var(--accent)">Base64 Encoded:</strong><br><span style="color: var(--success); word-break: break-all; font-family: monospace;">${encoded}</span>`;
+            } catch (error) {
+                output.innerHTML = `<span style="color: var(--danger)">Error encoding: ${error.message}</span>`;
+            }
+        }
+
+        function decodeBase64() {
+            const input = document.getElementById('base64-input').value;
+            const output = document.getElementById('base64-output');
+            
+            if (!input.trim()) {
+                output.innerHTML = '<span style="color: var(--warning)">Please enter base64 text to decode.</span>';
+                return;
+            }
+            
+            try {
+                const decoded = decodeURIComponent(escape(atob(input.trim())));
+                output.innerHTML = `<strong style="color: var(--accent)">Decoded:</strong><br><span style="color: var(--success); font-family: monospace;">${decoded}</span>`;
+            } catch (error) {
+                output.innerHTML = '<span style="color: var(--danger)">Error decoding: Invalid Base64 input</span>';
+            }
+        }
+
+        // Smooth scrolling for navigation with immediate highlighting
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const href = this.getAttribute('href');
+                
+                // Handle empty href
+                if (!href || href === '#') {
+                    return;
+                }
+                
+                const target = document.querySelector(href);
+                if (target) {
+                    // Immediately update highlighting when clicking navigation
+                    updateActiveSection(target);
+                    
+                    // Scroll to target
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    
+                    // Close mobile menu if open
+                    const sidebar = document.getElementById('sidebar');
+                    if (sidebar && sidebar.classList.contains('mobile-open')) {
+                        sidebar.classList.remove('mobile-open');
+                    }
+                }
+            });
+        });
+
+        // Dynamic scroll highlighting with smart section hierarchy handling
+        let activeSection = null;
+        let isScrolling = false;
+
+        function updateActiveSection(section) {
+            if (activeSection === section) return; // Prevent unnecessary updates
+            
+            activeSection = section;
+            
+            // Remove active class from all sidebar links
+            document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-links a').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Remove highlighted class from all sections
+            document.querySelectorAll('section[id], .api-category[id]').forEach(section => {
+                section.classList.remove('highlighted');
+            });
+            
+            // Add highlighted class to current section
+            activeSection.classList.add('highlighted');
+            
+            // Add active class to current section links
+            const activeId = activeSection.id;
+            const activeSidebarLink = document.querySelector(`.sidebar-nav a[href="#${activeId}"]`);
+            const activeNavLink = document.querySelector(`.nav-links a[href="#${activeId}"]`);
+            
+            if (activeSidebarLink) {
+                activeSidebarLink.classList.add('active');
+            }
+            if (activeNavLink) {
+                activeNavLink.classList.add('active');
+            }
+
+            // Handle API sub-sections (prioritize specific categories over main API reference)
+            const apiCategories = ['hashing', 'encryption', 'signatures', 'utilities', 'checksums'];
+            if (apiCategories.includes(activeId)) {
+                const apiRefNavLink = document.querySelector('.nav-links a[href="#api-reference"]');
+                if (apiRefNavLink) {
+                    apiRefNavLink.classList.add('active');
+                }
+            }
+
+            // Handle installation sub-sections
+            if (activeId === 'installation' || activeId === 'quick-start') {
+                const installationLink = document.querySelector('.nav-links a[href="#installation"]');
+                if (installationLink) {
+                    installationLink.classList.add('active');
+                }
+            }
+        }
+
+        function detectActiveSection() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const sections = document.querySelectorAll('section[id], .api-category[id]');
+            
+            let bestSection = null;
+            let bestScore = -1;
+            
+            // API categories for priority handling
+            const apiCategories = ['hashing', 'encryption', 'signatures', 'utilities', 'checksums'];
+            
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                const sectionTop = rect.top + scrollTop;
+                const sectionBottom = rect.bottom + scrollTop;
+                const sectionHeight = rect.height;
+                const sectionId = section.id;
+                
+                // Calculate how much of the section is in the "active zone" (top 30% of viewport)
+                const activeZoneTop = scrollTop + 80; // Header offset
+                const activeZoneBottom = scrollTop + (windowHeight * 0.4);
+                
+                // Calculate intersection with active zone
+                const intersectionTop = Math.max(activeZoneTop, sectionTop);
+                const intersectionBottom = Math.min(activeZoneBottom, sectionBottom);
+                const intersectionHeight = Math.max(0, intersectionBottom - intersectionTop);
+                
+                // Calculate visibility ratio in active zone
+                const activeZoneHeight = activeZoneBottom - activeZoneTop;
+                const visibilityInActiveZone = intersectionHeight / activeZoneHeight;
+                
+                // Calculate how much of the section is visible overall
+                const viewportTop = scrollTop;
+                const viewportBottom = scrollTop + windowHeight;
+                const visibleTop = Math.max(viewportTop, sectionTop);
+                const visibleBottom = Math.min(viewportBottom, sectionBottom);
+                const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+                const overallVisibility = visibleHeight / sectionHeight;
+                
+                // Scoring system
+                let score = 0;
+                
+                // Primary score: visibility in active zone
+                score += visibilityInActiveZone * 10;
+                
+                // Secondary score: overall visibility
+                score += overallVisibility * 2;
+                
+                // Bonus for sections that start near or above the active zone
+                if (sectionTop <= activeZoneTop + 50) {
+                    score += 1;
+                }
+                
+                // Special handling for API Reference vs its categories
+                if (sectionId === 'api-reference') {
+                    // Check if any API category is significantly visible
+                    const hasVisibleApiCategory = apiCategories.some(categoryId => {
+                        const categoryElement = document.getElementById(categoryId);
+                        if (categoryElement) {
+                            const categoryRect = categoryElement.getBoundingClientRect();
+                            const categoryVisibility = Math.max(0, 
+                                Math.min(windowHeight, categoryRect.bottom) - Math.max(0, categoryRect.top)
+                            ) / categoryRect.height;
+                            return categoryVisibility > 0.3;
+                        }
+                        return false;
+                    });
+                    
+                    // Reduce score for main API reference if categories are visible
+                    if (hasVisibleApiCategory) {
+                        score *= 0.3;
+                    }
+                }
+                
+                // Prioritize API categories when they're visible
+                if (apiCategories.includes(sectionId) && overallVisibility > 0.2) {
+                    score += 3;
+                }
+                
+                // Must have some visibility to be considered
+                if ((visibilityInActiveZone > 0.1 || overallVisibility > 0.2) && score > bestScore) {
+                    bestScore = score;
+                    bestSection = section;
+                }
+            });
+            
+            if (bestSection && bestSection !== activeSection) {
+                updateActiveSection(bestSection);
+            }
+        }
+
+        // Throttled scroll detection
+        let scrollTimeout;
+        window.addEventListener('scroll', function() {
+            isScrolling = true;
+            
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+            
+            scrollTimeout = setTimeout(() => {
+                detectActiveSection();
+                isScrolling = false;
+            }, 50);
+        });
+
+        // Remove the intersection observer as it was causing conflicts
+        // Use only the dynamic scroll-based detection
+
+        // Observe all sections and API categories
+        document.querySelectorAll('section[id], .api-category[id]').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Add specific handlers for hero buttons
+        document.querySelectorAll('.hero-actions .btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        updateActiveSection(target);
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Initialize active section on page load
+        function initializeActiveSection() {
+            const sections = document.querySelectorAll('section[id], .api-category[id]');
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Start with Overview as default
+            let currentSection = document.querySelector('#overview');
+            
+            for (let i = 0; i < sections.length; i++) {
+                const section = sections[i];
+                const rect = section.getBoundingClientRect();
+                const sectionTop = rect.top + scrollTop;
+                
+                // Check if we've scrolled past the start of this section
+                if (scrollTop >= sectionTop - 150) {
+                    currentSection = section;
+                }
+            }
+            
+            if (currentSection) {
+                updateActiveSection(currentSection);
+            }
+        }
+
+        // Initialize on page load and DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeActiveSection);
+        } else {
+            initializeActiveSection();
+        }
+        
+        // Also initialize after a short delay to ensure everything is rendered
+        setTimeout(initializeActiveSection, 200);
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            
+            if (sidebar && sidebar.classList.contains('mobile-open')) {
+                if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                    sidebar.classList.remove('mobile-open');
+                }
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            const sidebar = document.getElementById('sidebar');
+            if (window.innerWidth > 1024 && sidebar && sidebar.classList.contains('mobile-open')) {
+                sidebar.classList.remove('mobile-open');
+            }
+        });
+
+        // Scroll progress indicator (separate from section detection)
+        let scrollProgressTimeout;
+        
+        window.addEventListener('scroll', function() {
+            // Handle scroll progress indicator
+            if (scrollProgressTimeout) {
+                clearTimeout(scrollProgressTimeout);
+            }
+            
+            scrollProgressTimeout = setTimeout(() => {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+                const scrollProgress = Math.min((scrollTop / scrollHeight) * 100, 100);
+                
+                document.documentElement.style.setProperty('--scroll-progress', scrollProgress + '%');
+            }, 10);
+        }, { passive: true });
+    </script>
 </body>
 </html>
