@@ -483,9 +483,10 @@
 
         .demo-controls {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr auto;
             gap: 2rem;
             margin-bottom: 2rem;
+            align-items: start;
         }
 
         .input-group {
@@ -510,6 +511,7 @@
             color: var(--text-primary);
             font-family: 'SF Mono', monospace;
             transition: border-color 0.2s ease;
+            resize: none; /* Disable resize completely */
         }
 
         .input-group input:focus,
@@ -1087,37 +1089,41 @@ print("Signature valid:", IsValid)</code></pre>
                 <div class="demo-section">
                     <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);"><i class="fas fa-fingerprint"></i> Hash Functions Demo</h3>
                     <div class="demo-controls">
-                        <div class="input-group">
-                            <label for="hash-input">Input Text:</label>
-                            <textarea id="hash-input" placeholder="Enter text to hash..." rows="4">Hello World!</textarea>
+                        <div class="demo-input-container">
+                            <div class="input-group">
+                                <label for="hash-input">Input Text:</label>
+                                <textarea id="hash-input" placeholder="Enter text to hash..." rows="4">Hello World!</textarea>
+                            </div>
                         </div>
-                        <div class="input-group">
+                        <div class="demo-buttons-container">
                             <label for="hash-algorithm">Algorithm:</label>
-                            <select id="hash-algorithm">
-                                <option value="sha256">SHA256 (most common)</option>
+                            <select id="hash-algorithm" style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 6px; padding: 0.8rem; color: var(--text-primary); margin-bottom: 0.75rem;">
+                                <option value="sha256">SHA256 (most popular)</option>
                                 <option value="sha1">SHA1 (legacy)</option>
-                                <option value="md5">MD5 (fast, non-crypto)</option>
-                                <option value="sha512">SHA512 (high security)</option>
+                                <option value="md5">MD5 (legacy)</option>
+                                <option value="sha512">SHA512 (most secure)</option>
                             </select>
-                            <button class="btn btn-primary" onclick="performHash()" style="margin-top: 1rem;">
-                                <i class="fas fa-cog"></i> Calculate Hash
+                            <button class="btn btn-primary" onclick="performHash()">
+                                <i class="fas fa-calculator"></i> Calculate Hash
                             </button>
                         </div>
                     </div>
                     <div class="input-group">
                         <label>Hash Output:</label>
-                        <div class="demo-output" id="hash-output">Click "Calculate Hash" to see the result...</div>
+                        <div class="demo-output" id="hash-output">Click "Calculate Hash" to see the result</div>
                     </div>
                 </div>
 
                 <div class="demo-section">
                     <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);"><i class="fas fa-code"></i> Base64 Encoder/Decoder</h3>
                     <div class="demo-controls">
-                        <div class="input-group">
-                            <label for="base64-input">Input:</label>
-                            <textarea id="base64-input" placeholder="Enter text or base64..." rows="3">You forget a thousand things every day, pal. Make sure this is one of them</textarea>
+                        <div class="demo-input-container">
+                            <div class="input-group">
+                                <label for="base64-input">Input:</label>
+                                <textarea id="base64-input" placeholder="Enter text to encode/decode..." rows="4">Hello World!</textarea>
+                            </div>
                         </div>
-                        <div class="input-group">
+                        <div class="demo-buttons-container">
                             <button class="btn btn-primary" onclick="encodeBase64()">
                                 <i class="fas fa-arrow-up"></i> Encode to Base64
                             </button>
@@ -1128,7 +1134,7 @@ print("Signature valid:", IsValid)</code></pre>
                     </div>
                     <div class="input-group">
                         <label>Output:</label>
-                        <div class="demo-output" id="base64-output">Use the buttons above to encode or decode...</div>
+                        <div class="demo-output" id="base64-output">Click a button to see the result</div>
                     </div>
                 </div>
             </section>
@@ -1523,15 +1529,28 @@ print("Signature valid:", IsValid)</code></pre>
             }, 50);
         });
 
-        // Remove the intersection observer as it was causing conflicts
-        // Use only the dynamic scroll-based detection
-
-        // Observe all sections and API categories
-        document.querySelectorAll('section[id], .api-category[id]').forEach(section => {
-            observer.observe(section);
-        });
+        // Initialize syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
 
         // Add specific handlers for hero buttons
+        document.querySelectorAll('.hero-actions .btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        updateActiveSection(target);
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                }
+            });
+        });
         document.querySelectorAll('.hero-actions .btn').forEach(button => {
             button.addEventListener('click', function(e) {
                 const href = this.getAttribute('href');
