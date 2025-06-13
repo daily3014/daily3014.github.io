@@ -1,7 +1,206 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Luau Crypto Docs</title>
+  <link href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@latest/index.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #1e1e2f;
+      --text: #e0e0f0;
+      --accent: #8be9fd;
+      --code-bg: #2b2b3d;
+      --section-bg: #282838;
+      --font: "Inter Variable", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      padding: 0 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      padding: 2rem 0;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.3rem;
+      color: var(--accent);
+    }
+
+    header p {
+      font-size: 1.1rem;
+      opacity: 0.8;
+    }
+
+    nav {
+      margin: 2rem auto;
+      max-width: 800px;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: var(--accent);
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+      transition: background 0.2s;
+    }
+
+    nav a:hover {
+      background: var(--section-bg);
+    }
+
+    section {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: var(--section-bg);
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+
+    section h2 {
+      border-bottom: 1px solid #444;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+
+    pre {
+      background: var(--code-bg);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.95rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 0;
+      font-size: 0.9rem;
+      opacity: 0.6;
+    }
+
+    .note {
+      background: #444860;
+      padding: 1rem;
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    .toggle-dark {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: var(--section-bg);
+      border: none;
+      color: var(--text);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
 <body>
-<h1>Hello World</h1>
-<p>I'm hosted with GitHub Pages.</p>
+
+<button class="toggle-dark" onclick="toggleDark()">🌓</button>
+
+<header>
+  <h1>Luau Cryptography</h1>
+  <p>Documentation for secure, fast, and clear cryptographic modules written in Luau</p>
+</header>
+
+<nav>
+  <a href="#hash">Hash Functions</a>
+  <a href="#encryption">Encryption</a>
+  <a href="#keys">Key Management</a>
+  <a href="#api">API Reference</a>
+  <a href="#security">Security Notes</a>
+</nav>
+
+<section id="hash">
+  <h2>🔐 Hash Functions</h2>
+  <p>Provides implementations of secure one-way functions like SHA-2, SHA-3, and BLAKE2b/3.</p>
+  <pre><code class="language-lua">local hash = require("SHA2_256")
+local digest = hash:Digest("hello world")
+print(digest)</code></pre>
+</section>
+
+<section id="encryption">
+  <h2>🔒 Encryption</h2>
+  <p>Symmetric AES-based encryption with secure padding and IV generation.</p>
+  <pre><code class="language-lua">local aes = require("AES")
+local ciphertext = aes:Encrypt("secret", key)
+local plaintext = aes:Decrypt(ciphertext, key)</code></pre>
+</section>
+
+<section id="keys">
+  <h2>🔑 Key Management</h2>
+  <p>Use securely derived keys. Consider using PBKDF2 or HKDF for password-based secrets.</p>
+  <div class="note">
+    Never store plain keys. Always zero buffers after use.
+  </div>
+</section>
+
+<section id="api">
+  <h2>📘 API Reference</h2>
+  <p>Each module uses PascalCase naming and returns a class-like table. Example:</p>
+  <pre><code class="language-lua">local sha3 = require("SHA3_256")
+
+-- API
+sha3:Digest(data: string): string</code></pre>
+</section>
+
+<section id="security">
+  <h2>🛡️ Security Notes</h2>
+  <ul>
+    <li>Never hardcode secret keys</li>
+    <li>Use secure random generators</li>
+    <li>Prefer SHA-3 or BLAKE3 where possible</li>
+    <li>Validate data lengths and encoding</li>
+  </ul>
+</section>
+
+<footer>
+  &copy; 2025 LuauCrypto Docs. Secure your code.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+<script>
+  function toggleDark() {
+    const root = document.documentElement;
+    const dark = getComputedStyle(root).getPropertyValue('--bg') === '#1e1e2f';
+    if (dark) {
+      root.style.setProperty('--bg', '#f8f8f8');
+      root.style.setProperty('--text', '#222');
+      root.style.setProperty('--accent', '#0066cc');
+      root.style.setProperty('--code-bg', '#f0f0f0');
+      root.style.setProperty('--section-bg', '#fff');
+    } else {
+      root.style.setProperty('--bg', '#1e1e2f');
+      root.style.setProperty('--text', '#e0e0f0');
+      root.style.setProperty('--accent', '#8be9fd');
+      root.style.setProperty('--code-bg', '#2b2b3d');
+      root.style.setProperty('--section-bg', '#282838');
+    }
+  }
+</script>
 </body>
 </html>
