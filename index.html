@@ -1176,8 +1176,12 @@ print("Signature valid:", IsValid)</code></pre>
 
     <script>
         // Error prevention for external scripts - prevents adngin errors
-        (function() {
+        (function initializeErrorPrevention() {
             'use strict';
+            
+            // Only initialize once
+            if (window.errorPreventionInitialized) return;
+            window.errorPreventionInitialized = true;
             
             // Suppress external script errors that we can't control
             window.addEventListener('error', function(e) {
@@ -1254,15 +1258,26 @@ print("Signature valid:", IsValid)</code></pre>
             document.body.removeChild(textArea);
         }
 
+        // Store timeout IDs to prevent memory leaks
+        const copyTimeouts = new Map(); // Changed from WeakMap to Map for cleanup
+        
         function showCopySuccess(button) {
-            const originalText = button.innerHTML;
+            // Clear any existing timeout for this button
+            if (copyTimeouts.has(button)) {
+                clearTimeout(copyTimeouts.get(button));
+            }
+            
             button.innerHTML = '<i class="fas fa-check"></i> Copied!';
             button.style.background = 'var(--success)';
             
-            setTimeout(() => {
+            // Store the new timeout ID
+            const timeoutId = setTimeout(() => {
                 button.innerHTML = 'Copy';
                 button.style.background = 'var(--accent)';
+                copyTimeouts.delete(button); // Clean up
             }, 2000);
+            
+            copyTimeouts.set(button, timeoutId);
         }
 
         // Hash demo functionality
@@ -1336,40 +1351,14 @@ print("Signature valid:", IsValid)</code></pre>
             }
         }
 
-        // Smooth scrolling for navigation with immediate highlighting
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const href = this.getAttribute('href');
-                
-                // Handle empty href
-                if (!href || href === '#') {
-                    return;
-                }
-                
-                const target = document.querySelector(href);
-                if (target) {
-                    // Immediately update highlighting when clicking navigation
-                    updateActiveSection(target);
-                    
-                    // Scroll to target
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                    
-                    // Close mobile menu if open
-                    const sidebar = document.getElementById('sidebar');
-                    if (sidebar && sidebar.classList.contains('mobile-open')) {
-                        sidebar.classList.remove('mobile-open');
-                    }
-                }
-            });
-        });
-
+        // Prevent memory leaks from multiple event listeners
+        let isInitialized = false;
+        
         // Dynamic scroll highlighting with smart section hierarchy handling
         let activeSection = null;
         let isScrolling = false;
+        let scrollTimeout;
+        let scrollProgressTimeout;
 
         function updateActiveSection(section) {
             if (activeSection === section) return; // Prevent unnecessary updates
@@ -1515,32 +1504,50 @@ print("Signature valid:", IsValid)</code></pre>
             }
         }
 
-        // Throttled scroll detection
-        let scrollTimeout;
-        window.addEventListener('scroll', function() {
+        // Consolidated scroll handler to prevent memory leaks
+        function handleScroll() {
             isScrolling = true;
             
+            // Clear existing timeouts to prevent accumulation
             if (scrollTimeout) {
                 clearTimeout(scrollTimeout);
             }
+            if (scrollProgressTimeout) {
+                clearTimeout(scrollProgressTimeout);
+            }
             
+            // Handle scroll progress indicator
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollProgress = Math.min((scrollTop / scrollHeight) * 100, 100);
+            document.documentElement.style.setProperty('--scroll-progress', scrollProgress + '%');
+            
+            // Handle section detection
             scrollTimeout = setTimeout(() => {
                 detectActiveSection();
                 isScrolling = false;
             }, 50);
-        });
-
-        // Initialize syntax highlighting
-        if (typeof Prism !== 'undefined') {
-            Prism.highlightAll();
         }
 
-        // Add specific handlers for hero buttons
-        document.querySelectorAll('.hero-actions .btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                const href = this.getAttribute('href');
-                if (href && href.startsWith('#')) {
+        // Single scroll event listener to prevent duplicates
+        function initializeScrollHandler() {
+            if (!isInitialized) {
+                window.addEventListener('scroll', handleScroll, { passive: true });
+            }
+        }
+
+        // Initialize all event listeners (only once)
+        function initializeEventListeners() {
+            if (isInitialized) return; // Prevent duplicate initialization
+            
+            // Smooth scrolling for navigation
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
                     e.preventDefault();
+                    const href = this.getAttribute('href');
+                    
+                    if (!href || href === '#') return;
+                    
                     const target = document.querySelector(href);
                     if (target) {
                         updateActiveSection(target);
@@ -1548,26 +1555,59 @@ print("Signature valid:", IsValid)</code></pre>
                             behavior: 'smooth',
                             block: 'start'
                         });
+                        
+                        // Close mobile menu if open
+                        const sidebar = document.getElementById('sidebar');
+                        if (sidebar && sidebar.classList.contains('mobile-open')) {
+                            sidebar.classList.remove('mobile-open');
+                        }
+                    }
+                });
+            });
+
+            // Hero button handlers
+            document.querySelectorAll('.hero-actions .btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        const target = document.querySelector(href);
+                        if (target) {
+                            updateActiveSection(target);
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Mobile menu handlers
+            document.addEventListener('click', function(e) {
+                const sidebar = document.getElementById('sidebar');
+                const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+                
+                if (sidebar && sidebar.classList.contains('mobile-open')) {
+                    if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                        sidebar.classList.remove('mobile-open');
                     }
                 }
             });
-        });
-        document.querySelectorAll('.hero-actions .btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                const href = this.getAttribute('href');
-                if (href && href.startsWith('#')) {
-                    e.preventDefault();
-                    const target = document.querySelector(href);
-                    if (target) {
-                        updateActiveSection(target);
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
+
+            // Window resize handler
+            window.addEventListener('resize', function() {
+                const sidebar = document.getElementById('sidebar');
+                if (window.innerWidth > 1024 && sidebar && sidebar.classList.contains('mobile-open')) {
+                    sidebar.classList.remove('mobile-open');
                 }
             });
-        });
+
+            // Initialize scroll handler
+            initializeScrollHandler();
+            
+            isInitialized = true;
+        }
 
         // Initialize active section on page load
         function initializeActiveSection() {
@@ -1593,53 +1633,42 @@ print("Signature valid:", IsValid)</code></pre>
             }
         }
 
-        // Initialize on page load and DOM ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeActiveSection);
-        } else {
+        // Main initialization function
+        function initialize() {
+            // Initialize syntax highlighting
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
+            }
+            
+            // Initialize all event listeners
+            initializeEventListeners();
+            
+            // Initialize active section
             initializeActiveSection();
         }
-        
-        // Also initialize after a short delay to ensure everything is rendered
-        setTimeout(initializeActiveSection, 200);
 
-        // Close mobile menu when clicking outside
-        document.addEventListener('click', function(e) {
-            const sidebar = document.getElementById('sidebar');
-            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        // Cleanup function to prevent memory leaks on page unload
+        function cleanup() {
+            // Clear all timeouts
+            if (scrollTimeout) clearTimeout(scrollTimeout);
+            if (scrollProgressTimeout) clearTimeout(scrollProgressTimeout);
             
-            if (sidebar && sidebar.classList.contains('mobile-open')) {
-                if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                    sidebar.classList.remove('mobile-open');
-                }
-            }
-        });
+            // Clear copy button timeouts
+            copyTimeouts.forEach((timeoutId) => {
+                clearTimeout(timeoutId);
+            });
+            copyTimeouts.clear();
+        }
 
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            const sidebar = document.getElementById('sidebar');
-            if (window.innerWidth > 1024 && sidebar && sidebar.classList.contains('mobile-open')) {
-                sidebar.classList.remove('mobile-open');
-            }
-        });
+        // Initialize on page load and DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            initialize();
+        }
 
-        // Scroll progress indicator (separate from section detection)
-        let scrollProgressTimeout;
-        
-        window.addEventListener('scroll', function() {
-            // Handle scroll progress indicator
-            if (scrollProgressTimeout) {
-                clearTimeout(scrollProgressTimeout);
-            }
-            
-            scrollProgressTimeout = setTimeout(() => {
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-                const scrollProgress = Math.min((scrollTop / scrollHeight) * 100, 100);
-                
-                document.documentElement.style.setProperty('--scroll-progress', scrollProgress + '%');
-            }, 10);
-        }, { passive: true });
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', cleanup);
     </script>
 </body>
 </html>
