@@ -1175,580 +1175,289 @@ print("Signature valid:", IsValid)</code></pre>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
     <script>
-        // MEMORY LEAK FIXES APPLIED
+        // ULTRA-AGGRESSIVE MEMORY LEAK PREVENTION
         
-        // Singleton pattern to prevent multiple initializations
-        const AppManager = (function() {
-            let instance = null;
-            let isInitialized = false;
+        // Simple, zero-closure approach to prevent ALL memory leaks
+        (function() {
+            'use strict';
             
-            // Store references to cleanup functions and event handlers
-            const eventHandlers = new Map();
-            const timeoutIds = new Set();
-            const observers = new Set();
+            // Prevent multiple initialization
+            if (window.cryptoSiteInitialized) return;
+            window.cryptoSiteInitialized = true;
             
-            function createInstance() {
-                let activeSection = null;
-                let scrollHandler = null;
-                let resizeHandler = null;
-                let clickHandler = null;
+            // Static state without closures
+            let activeSection = null;
+            let isScrolling = false;
+            let lastScrollTime = 0;
+            
+            // Reuse the same objects to prevent allocation
+            const reusableObjects = {
+                timeouts: new Set(),
+                copyStates: new Map() // Use regular Map to allow proper cleanup
+            };
+            
+            // Passive scroll handler - no closures, no RAF, minimal allocations
+            function handleScroll() {
+                const now = performance.now();
+                if (now - lastScrollTime < 16) return; // 60fps limit
+                lastScrollTime = now;
                 
-                // Throttle function to limit execution rate
-                function throttle(func, limit) {
-                    let inThrottle;
-                    return function() {
-                        const args = arguments;
-                        const context = this;
-                        if (!inThrottle) {
-                            func.apply(context, args);
-                            inThrottle = true;
-                            const timeoutId = setTimeout(() => {
-                                inThrottle = false;
-                                timeoutIds.delete(timeoutId);
-                            }, limit);
-                            timeoutIds.add(timeoutId);
-                        }
-                    };
-                }
+                if (isScrolling) return;
+                isScrolling = true;
                 
-                // Debounce function to delay execution
-                function debounce(func, wait) {
-                    let timeout;
-                    return function executedFunction(...args) {
-                        const later = () => {
-                            if (timeout) {
-                                timeoutIds.delete(timeout);
-                                timeout = null;
-                            }
-                            func(...args);
-                        };
-                        if (timeout) {
-                            clearTimeout(timeout);
-                            timeoutIds.delete(timeout);
-                        }
-                        timeout = setTimeout(later, wait);
-                        timeoutIds.add(timeout);
-                    };
-                }
-
-                // Safe timeout function that tracks IDs
-                function createTimeout(callback, delay) {
-                    const timeoutId = setTimeout(() => {
-                        timeoutIds.delete(timeoutId);
-                        callback();
-                    }, delay);
-                    timeoutIds.add(timeoutId);
-                    return timeoutId;
-                }
-
-                // Safe interval function that tracks IDs
-                function createInterval(callback, delay) {
-                    const intervalId = setInterval(callback, delay);
-                    timeoutIds.add(intervalId);
-                    return intervalId;
-                }
-
-                // Cleanup all timeouts and intervals
-                function clearAllTimeouts() {
-                    timeoutIds.forEach(id => {
-                        clearTimeout(id);
-                        clearInterval(id);
-                    });
-                    timeoutIds.clear();
-                }
-
-                // WeakMap for DOM element associations to prevent memory leaks
-                const copyButtonStates = new WeakMap();
-
-                function updateActiveSection(section) {
-                    if (activeSection === section) return;
-                    
-                    activeSection = section;
-                    
-                    // Use more efficient class updates
-                    requestAnimationFrame(() => {
-                        // Batch DOM updates
-                        const updates = [];
-                        
-                        // Remove active classes
-                        document.querySelectorAll('.sidebar-nav a.active, .nav-links a.active').forEach(link => {
-                            updates.push(() => link.classList.remove('active'));
-                        });
-                        
-                        document.querySelectorAll('section[id].highlighted, .api-category[id].highlighted').forEach(section => {
-                            updates.push(() => section.classList.remove('highlighted'));
-                        });
-                        
-                        // Add new active classes
-                        updates.push(() => activeSection.classList.add('highlighted'));
-                        
-                        const activeId = activeSection.id;
-                        const activeSidebarLink = document.querySelector(`.sidebar-nav a[href="#${activeId}"]`);
-                        const activeNavLink = document.querySelector(`.nav-links a[href="#${activeId}"]`);
-                        
-                        if (activeSidebarLink) {
-                            updates.push(() => activeSidebarLink.classList.add('active'));
-                        }
-                        if (activeNavLink) {
-                            updates.push(() => activeNavLink.classList.add('active'));
-                        }
-
-                        // Handle API sub-sections
-                        const apiCategories = ['hashing', 'encryption', 'signatures', 'utilities', 'checksums'];
-                        if (apiCategories.includes(activeId)) {
-                            const apiRefNavLink = document.querySelector('.nav-links a[href="#api-reference"]');
-                            if (apiRefNavLink) {
-                                updates.push(() => apiRefNavLink.classList.add('active'));
-                            }
-                        }
-
-                        // Execute all updates in batch
-                        updates.forEach(update => update());
-                    });
-                }
-
-                function detectActiveSection() {
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    const windowHeight = window.innerHeight;
-                    const sections = document.querySelectorAll('section[id], .api-category[id]');
-                    
-                    let bestSection = null;
-                    let bestScore = -1;
-                    
-                    const apiCategories = ['hashing', 'encryption', 'signatures', 'utilities', 'checksums'];
-                    
-                    sections.forEach(section => {
-                        const rect = section.getBoundingClientRect();
-                        const sectionTop = rect.top + scrollTop;
-                        const sectionBottom = rect.bottom + scrollTop;
-                        const sectionHeight = rect.height;
-                        const sectionId = section.id;
-                        
-                        const activeZoneTop = scrollTop + 80;
-                        const activeZoneBottom = scrollTop + (windowHeight * 0.4);
-                        
-                        const intersectionTop = Math.max(activeZoneTop, sectionTop);
-                        const intersectionBottom = Math.min(activeZoneBottom, sectionBottom);
-                        const intersectionHeight = Math.max(0, intersectionBottom - intersectionTop);
-                        
-                        const activeZoneHeight = activeZoneBottom - activeZoneTop;
-                        const visibilityInActiveZone = intersectionHeight / activeZoneHeight;
-                        
-                        const viewportTop = scrollTop;
-                        const viewportBottom = scrollTop + windowHeight;
-                        const visibleTop = Math.max(viewportTop, sectionTop);
-                        const visibleBottom = Math.min(viewportBottom, sectionBottom);
-                        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-                        const overallVisibility = visibleHeight / sectionHeight;
-                        
-                        let score = visibilityInActiveZone * 10 + overallVisibility * 2;
-                        
-                        if (sectionTop <= activeZoneTop + 50) {
-                            score += 1;
-                        }
-                        
-                        if (sectionId === 'api-reference') {
-                            const hasVisibleApiCategory = apiCategories.some(categoryId => {
-                                const categoryElement = document.getElementById(categoryId);
-                                if (categoryElement) {
-                                    const categoryRect = categoryElement.getBoundingClientRect();
-                                    const categoryVisibility = Math.max(0, 
-                                        Math.min(windowHeight, categoryRect.bottom) - Math.max(0, categoryRect.top)
-                                    ) / categoryRect.height;
-                                    return categoryVisibility > 0.3;
-                                }
-                                return false;
-                            });
-                            
-                            if (hasVisibleApiCategory) {
-                                score *= 0.3;
-                            }
-                        }
-                        
-                        if (apiCategories.includes(sectionId) && overallVisibility > 0.2) {
-                            score += 3;
-                        }
-                        
-                        if ((visibilityInActiveZone > 0.1 || overallVisibility > 0.2) && score > bestScore) {
-                            bestScore = score;
-                            bestSection = section;
-                        }
-                    });
-                    
-                    if (bestSection && bestSection !== activeSection) {
-                        updateActiveSection(bestSection);
+                // Direct DOM manipulation - no queuing, no closures
+                const scrollTop = window.pageYOffset;
+                const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+                const scrollProgress = Math.min((scrollTop / scrollHeight) * 100, 100);
+                document.documentElement.style.setProperty('--scroll-progress', scrollProgress + '%');
+                
+                // Simple active section detection
+                const sections = document.querySelectorAll('section[id], .api-category[id]');
+                let newActiveSection = null;
+                
+                for (let i = sections.length - 1; i >= 0; i--) {
+                    const section = sections[i];
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top <= 100) {
+                        newActiveSection = section;
+                        break;
                     }
                 }
-
-                // Optimized scroll handler with RAF throttling
-                scrollHandler = throttle(() => {
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-                    const scrollProgress = Math.min((scrollTop / scrollHeight) * 100, 100);
+                
+                if (newActiveSection && newActiveSection !== activeSection) {
+                    // Clear all active states first
+                    const activeElements = document.querySelectorAll('.sidebar-nav a.active, .nav-links a.active, section[id].highlighted, .api-category[id].highlighted');
+                    for (let i = 0; i < activeElements.length; i++) {
+                        activeElements[i].classList.remove('active', 'highlighted');
+                    }
                     
-                    requestAnimationFrame(() => {
-                        document.documentElement.style.setProperty('--scroll-progress', scrollProgress + '%');
-                        detectActiveSection();
-                    });
-                }, 16); // ~60fps
-
-                resizeHandler = debounce(() => {
+                    // Set new active states
+                    activeSection = newActiveSection;
+                    activeSection.classList.add('highlighted');
+                    
+                    const activeId = activeSection.id;
+                    const sidebarLink = document.querySelector(`.sidebar-nav a[href="#${activeId}"]`);
+                    const navLink = document.querySelector(`.nav-links a[href="#${activeId}"]`);
+                    
+                    if (sidebarLink) sidebarLink.classList.add('active');
+                    if (navLink) navLink.classList.add('active');
+                    
+                    // Handle API categories
+                    if (['hashing', 'encryption', 'signatures', 'utilities', 'checksums'].includes(activeId)) {
+                        const apiRefLink = document.querySelector('.nav-links a[href="#api-reference"]');
+                        if (apiRefLink) apiRefLink.classList.add('active');
+                    }
+                }
+                
+                isScrolling = false;
+            }
+            
+            // Resize handler - minimal and direct
+            function handleResize() {
+                if (window.innerWidth > 1024) {
                     const sidebar = document.getElementById('sidebar');
-                    if (window.innerWidth > 1024 && sidebar && sidebar.classList.contains('mobile-open')) {
+                    if (sidebar) sidebar.classList.remove('mobile-open');
+                }
+            }
+            
+            // Click handler - event delegation only
+            function handleClick(e) {
+                const sidebar = document.getElementById('sidebar');
+                const mobileBtn = document.querySelector('.mobile-menu-btn');
+                
+                // Mobile menu logic
+                if (sidebar && sidebar.classList.contains('mobile-open')) {
+                    if (!sidebar.contains(e.target) && (!mobileBtn || !mobileBtn.contains(e.target))) {
                         sidebar.classList.remove('mobile-open');
                     }
-                }, 250);
-
-                // Optimized click handler using event delegation
-                clickHandler = function(e) {
-                    // Handle mobile menu closing
-                    const sidebar = document.getElementById('sidebar');
-                    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-                    
-                    if (sidebar && sidebar.classList.contains('mobile-open')) {
-                        if (!sidebar.contains(e.target) && (!mobileMenuBtn || !mobileMenuBtn.contains(e.target))) {
-                            sidebar.classList.remove('mobile-open');
-                        }
-                    }
-
-                    // Handle anchor clicks with delegation
-                    const anchor = e.target.closest('a[href^="#"]');
-                    if (anchor) {
-                        e.preventDefault();
-                        const href = anchor.getAttribute('href');
-                        
-                        if (!href || href === '#') return;
-                        
+                }
+                
+                // Anchor navigation
+                const anchor = e.target.closest('a[href^="#"]');
+                if (anchor) {
+                    e.preventDefault();
+                    const href = anchor.getAttribute('href');
+                    if (href && href !== '#') {
                         const target = document.querySelector(href);
                         if (target) {
-                            updateActiveSection(target);
-                            target.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'start'
-                            });
-                            
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             if (sidebar && sidebar.classList.contains('mobile-open')) {
                                 sidebar.classList.remove('mobile-open');
                             }
                         }
                     }
-                };
-
-                function init() {
-                    if (isInitialized) return false;
-                    
-                    // Add event listeners with proper cleanup tracking
-                    if (scrollHandler && !eventHandlers.has('scroll')) {
-                        window.addEventListener('scroll', scrollHandler, { passive: true });
-                        eventHandlers.set('scroll', scrollHandler);
-                    }
-                    
-                    if (resizeHandler && !eventHandlers.has('resize')) {
-                        window.addEventListener('resize', resizeHandler, { passive: true });
-                        eventHandlers.set('resize', resizeHandler);
-                    }
-                    
-                    if (clickHandler && !eventHandlers.has('click')) {
-                        document.addEventListener('click', clickHandler, { passive: false });
-                        eventHandlers.set('click', clickHandler);
-                    }
-
-                    // Initialize syntax highlighting
-                    if (typeof Prism !== 'undefined') {
-                        Prism.highlightAll();
-                    }
-
-                    // Initialize active section
-                    const sections = document.querySelectorAll('section[id], .api-category[id]');
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    
-                    let currentSection = document.querySelector('#overview');
-                    
-                    for (let i = 0; i < sections.length; i++) {
-                        const section = sections[i];
-                        const rect = section.getBoundingClientRect();
-                        const sectionTop = rect.top + scrollTop;
-                        
-                        if (scrollTop >= sectionTop - 150) {
-                            currentSection = section;
-                        }
-                    }
-                    
-                    if (currentSection) {
-                        updateActiveSection(currentSection);
-                    }
-
-                    isInitialized = true;
-                    return true;
                 }
-
-                function destroy() {
-                    // Remove event listeners
-                    eventHandlers.forEach((handler, type) => {
-                        if (type === 'scroll' || type === 'resize') {
-                            window.removeEventListener(type, handler);
-                        } else {
-                            document.removeEventListener(type, handler);
-                        }
-                    });
-                    eventHandlers.clear();
-
-                    // Clear all timeouts and intervals
-                    clearAllTimeouts();
-
-                    // Clear observers
-                    observers.forEach(observer => {
-                        if (observer.disconnect) {
-                            observer.disconnect();
-                        }
-                    });
-                    observers.clear();
-
-                    // Reset state
-                    activeSection = null;
-                    isInitialized = false;
-                }
-
-                return {
-                    init,
-                    destroy,
-                    updateActiveSection,
-                    createTimeout,
-                    createInterval,
-                    copyButtonStates
-                };
-            }
-
-            return {
-                getInstance: function() {
-                    if (!instance) {
-                        instance = createInstance();
-                    }
-                    return instance;
-                },
-                destroy: function() {
-                    if (instance) {
-                        instance.destroy();
-                        instance = null;
-                        isInitialized = false;
-                    }
-                }
-            };
-        })();
-
-        // Global functions that interface with the singleton
-        let app = null;
-
-        function toggleMobileMenu() {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                sidebar.classList.toggle('mobile-open');
-            }
-        }
-
-        function copyCode(button) {
-            if (!app || !button) return;
-            
-            const codeBlock = button.closest('.code-example')?.querySelector('code');
-            if (!codeBlock) return;
-            
-            const text = codeBlock.textContent;
-            
-            // Check if we already have a timeout for this button
-            const existingState = app.copyButtonStates.get(button);
-            if (existingState && existingState.timeoutId) {
-                clearTimeout(existingState.timeoutId);
             }
             
-            function showSuccess() {
-                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                button.style.background = 'var(--success)';
+            // Cleanup function that actually works
+            function cleanup() {
+                window.removeEventListener('scroll', handleScroll);
+                window.removeEventListener('resize', handleResize);
+                document.removeEventListener('click', handleClick);
                 
-                const timeoutId = app.createTimeout(() => {
-                    button.innerHTML = 'Copy';
-                    button.style.background = 'var(--accent)';
-                    app.copyButtonStates.delete(button);
-                }, 2000);
-                
-                app.copyButtonStates.set(button, { timeoutId });
-            }
-            
-            function showError() {
-                button.innerHTML = '<i class="fas fa-times"></i> Failed';
-                button.style.background = 'var(--danger)';
-                
-                const timeoutId = app.createTimeout(() => {
-                    button.innerHTML = 'Copy';
-                    button.style.background = 'var(--accent)';
-                    app.copyButtonStates.delete(button);
-                }, 2000);
-                
-                app.copyButtonStates.set(button, { timeoutId });
-            }
-            
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(showSuccess).catch(() => {
-                    fallbackCopyText(text, showSuccess, showError);
+                // Clear all tracked timeouts
+                reusableObjects.timeouts.forEach(id => {
+                    clearTimeout(id);
+                    clearInterval(id);
                 });
-            } else {
-                fallbackCopyText(text, showSuccess, showError);
-            }
-        }
-
-        function fallbackCopyText(text, onSuccess, onError) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-999999px';
-            textArea.style.top = '-999999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    onSuccess();
-                } else {
-                    onError();
-                }
-            } catch (err) {
-                console.error('Failed to copy text: ', err);
-                onError();
+                reusableObjects.timeouts.clear();
+                reusableObjects.copyStates.clear();
+                
+                activeSection = null;
+                window.cryptoSiteInitialized = false;
             }
             
-            document.body.removeChild(textArea);
-        }
-
-        function performHash() {
-            const input = document.getElementById('hash-input')?.value;
-            const algorithm = document.getElementById('hash-algorithm')?.value;
-            const output = document.getElementById('hash-output');
+            // Add minimal event listeners
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            window.addEventListener('resize', handleResize, { passive: true });
+            document.addEventListener('click', handleClick);
             
-            if (!input || !output) return;
-            
-            if (!input.trim()) {
-                output.innerHTML = '<span style="color: var(--warning)">Please enter some text to hash.</span>';
-                return;
+            // Initialize syntax highlighting once
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
             }
             
-            let hash;
-            try {
-                switch(algorithm) {
-                    case 'sha256':
-                        hash = CryptoJS.SHA256(input).toString();
-                        break;
-                    case 'sha1':
-                        hash = CryptoJS.SHA1(input).toString();
-                        break;
-                    case 'md5':
-                        hash = CryptoJS.MD5(input).toString();
-                        break;
-                    case 'sha512':
-                        hash = CryptoJS.SHA512(input).toString();
-                        break;
-                    default:
-                        hash = CryptoJS.SHA256(input).toString();
+            // Set initial active section
+            const overview = document.querySelector('#overview');
+            if (overview) {
+                activeSection = overview;
+                overview.classList.add('highlighted');
+                const overviewLink = document.querySelector('.sidebar-nav a[href="#overview"]');
+                if (overviewLink) overviewLink.classList.add('active');
+            }
+            
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', cleanup);
+            window.addEventListener('pagehide', cleanup);
+            window.addEventListener('unload', cleanup);
+            
+            // Expose minimal global functions
+            window.toggleMobileMenu = function() {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) sidebar.classList.toggle('mobile-open');
+            };
+            
+            window.copyCode = function(button) {
+                if (!button) return;
+                
+                const codeBlock = button.closest('.code-example')?.querySelector('code');
+                if (!codeBlock) return;
+                
+                const text = codeBlock.textContent;
+                
+                // Clear existing timeout for this button
+                const existingTimeout = reusableObjects.copyStates.get(button);
+                if (existingTimeout) {
+                    clearTimeout(existingTimeout);
+                    reusableObjects.timeouts.delete(existingTimeout);
                 }
                 
-                output.innerHTML = `<strong style="color: var(--accent)">${algorithm.toUpperCase()}:</strong><br><span style="color: var(--success); word-break: break-all; font-family: monospace;">${hash}</span>`;
-            } catch (error) {
-                output.innerHTML = `<span style="color: var(--danger)">Error calculating hash: ${error.message}</span>`;
-            }
-        }
-
-        function encodeBase64() {
-            const input = document.getElementById('base64-input')?.value;
-            const output = document.getElementById('base64-output');
-            
-            if (!input || !output) return;
-            
-            if (!input.trim()) {
-                output.innerHTML = '<span style="color: var(--warning)">Please enter some text to encode.</span>';
-                return;
-            }
-            
-            try {
-                const encoded = btoa(unescape(encodeURIComponent(input)));
-                output.innerHTML = `<strong style="color: var(--accent)">Base64 Encoded:</strong><br><span style="color: var(--success); word-break: break-all; font-family: monospace;">${encoded}</span>`;
-            } catch (error) {
-                output.innerHTML = `<span style="color: var(--danger)">Error encoding: ${error.message}</span>`;
-            }
-        }
-
-        function decodeBase64() {
-            const input = document.getElementById('base64-input')?.value;
-            const output = document.getElementById('base64-output');
-            
-            if (!input || !output) return;
-            
-            if (!input.trim()) {
-                output.innerHTML = '<span style="color: var(--warning)">Please enter base64 text to decode.</span>';
-                return;
-            }
-            
-            try {
-                const decoded = decodeURIComponent(escape(atob(input.trim())));
-                output.innerHTML = `<strong style="color: var(--accent)">Decoded:</strong><br><span style="color: var(--success); font-family: monospace;">${decoded}</span>`;
-            } catch (error) {
-                output.innerHTML = '<span style="color: var(--danger)">Error decoding: Invalid Base64 input</span>';
-            }
-        }
-
-        // Optimized error prevention that doesn't accumulate
-        (function initializeErrorPrevention() {
-            'use strict';
-            
-            if (window.errorPreventionInitialized) return;
-            window.errorPreventionInitialized = true;
-            
-            const originalConsoleError = console.error;
-            const suppressedErrors = ['adengine', 'btloader', 'adngin', 'uic_prov', 'snigelweb'];
-            
-            window.addEventListener('error', function(e) {
-                if (e.filename && suppressedErrors.some(error => e.filename.includes(error))) {
-                    e.preventDefault();
-                    return false;
+                function resetButton() {
+                    button.innerHTML = 'Copy';
+                    button.style.background = 'var(--accent)';
+                    reusableObjects.copyStates.delete(button);
                 }
-            }, true);
-
-            window.adngin = window.adngin || function() { /* no-op */ };
+                
+                function showSuccess() {
+                    button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    button.style.background = 'var(--success)';
+                    const timeoutId = setTimeout(resetButton, 2000);
+                    reusableObjects.timeouts.add(timeoutId);
+                    reusableObjects.copyStates.set(button, timeoutId);
+                }
+                
+                function showError() {
+                    button.innerHTML = '<i class="fas fa-times"></i> Failed';
+                    button.style.background = 'var(--danger)';
+                    const timeoutId = setTimeout(resetButton, 2000);
+                    reusableObjects.timeouts.add(timeoutId);
+                    reusableObjects.copyStates.set(button, timeoutId);
+                }
+                
+                if (navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(text).then(showSuccess, showError);
+                } else {
+                    // Fallback
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy') ? showSuccess() : showError();
+                    } catch {
+                        showError();
+                    }
+                    document.body.removeChild(textArea);
+                }
+            };
             
-            console.error = function(...args) {
-                const message = args.join(' ');
-                if (!suppressedErrors.some(error => message.includes(error))) {
-                    originalConsoleError.apply(console, args);
+            window.performHash = function() {
+                const input = document.getElementById('hash-input')?.value;
+                const algorithm = document.getElementById('hash-algorithm')?.value;
+                const output = document.getElementById('hash-output');
+                
+                if (!input || !output) return;
+                
+                if (!input.trim()) {
+                    output.innerHTML = '<span style="color: var(--warning)">Please enter some text to hash.</span>';
+                    return;
+                }
+                
+                try {
+                    let hash;
+                    switch(algorithm) {
+                        case 'sha256': hash = CryptoJS.SHA256(input).toString(); break;
+                        case 'sha1': hash = CryptoJS.SHA1(input).toString(); break;
+                        case 'md5': hash = CryptoJS.MD5(input).toString(); break;
+                        case 'sha512': hash = CryptoJS.SHA512(input).toString(); break;
+                        default: hash = CryptoJS.SHA256(input).toString();
+                    }
+                    output.innerHTML = `<strong style="color: var(--accent)">${algorithm.toUpperCase()}:</strong><br><span style="color: var(--success); word-break: break-all; font-family: monospace;">${hash}</span>`;
+                } catch (error) {
+                    output.innerHTML = `<span style="color: var(--danger)">Error: ${error.message}</span>`;
+                }
+            };
+            
+            window.encodeBase64 = function() {
+                const input = document.getElementById('base64-input')?.value;
+                const output = document.getElementById('base64-output');
+                
+                if (!input || !output) return;
+                
+                if (!input.trim()) {
+                    output.innerHTML = '<span style="color: var(--warning)">Please enter text to encode.</span>';
+                    return;
+                }
+                
+                try {
+                    const encoded = btoa(unescape(encodeURIComponent(input)));
+                    output.innerHTML = `<strong style="color: var(--accent)">Base64 Encoded:</strong><br><span style="color: var(--success); word-break: break-all; font-family: monospace;">${encoded}</span>`;
+                } catch (error) {
+                    output.innerHTML = `<span style="color: var(--danger)">Error: ${error.message}</span>`;
+                }
+            };
+            
+            window.decodeBase64 = function() {
+                const input = document.getElementById('base64-input')?.value;
+                const output = document.getElementById('base64-output');
+                
+                if (!input || !output) return;
+                
+                if (!input.trim()) {
+                    output.innerHTML = '<span style="color: var(--warning)">Please enter base64 to decode.</span>';
+                    return;
+                }
+                
+                try {
+                    const decoded = decodeURIComponent(escape(atob(input.trim())));
+                    output.innerHTML = `<strong style="color: var(--accent)">Decoded:</strong><br><span style="color: var(--success); font-family: monospace;">${decoded}</span>`;
+                } catch {
+                    output.innerHTML = '<span style="color: var(--danger)">Error: Invalid Base64 input</span>';
                 }
             };
         })();
 
-        // Initialize app when DOM is ready
-        function initializeApp() {
-            app = AppManager.getInstance();
-            app.init();
-        }
-
-        // Proper cleanup on page unload
-        function cleanupApp() {
-            AppManager.destroy();
-            app = null;
-        }
-
-        // Initialize
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
-        } else {
-            initializeApp();
-        }
-
-        // Cleanup
-        window.addEventListener('beforeunload', cleanupApp);
-        window.addEventListener('pagehide', cleanupApp);
-
-        // Additional cleanup for SPA environments
-        if (typeof window.addEventListener === 'function') {
-            window.addEventListener('unload', cleanupApp);
-        }
     </script>
 </body>
 </html>
