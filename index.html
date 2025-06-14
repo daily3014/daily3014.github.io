@@ -1175,68 +1175,427 @@ print("Signature valid:", IsValid)</code></pre>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
     <script>
-        // Error prevention for external scripts - prevents adngin errors
-        (function initializeErrorPrevention() {
-            'use strict';
+        // MEMORY LEAK FIXES APPLIED
+        
+        // Singleton pattern to prevent multiple initializations
+        const AppManager = (function() {
+            let instance = null;
+            let isInitialized = false;
             
-            // Only initialize once
-            if (window.errorPreventionInitialized) return;
-            window.errorPreventionInitialized = true;
+            // Store references to cleanup functions and event handlers
+            const eventHandlers = new Map();
+            const timeoutIds = new Set();
+            const observers = new Set();
             
-            // Suppress external script errors that we can't control
-            window.addEventListener('error', function(e) {
-                if (e.filename && (
-                    e.filename.includes('adengine') || 
-                    e.filename.includes('btloader') ||
-                    e.filename.includes('adngin') ||
-                    e.filename.includes('uic_prov') ||
-                    e.filename.includes('snigelweb')
-                )) {
-                    e.preventDefault();
-                    return false;
+            function createInstance() {
+                let activeSection = null;
+                let scrollHandler = null;
+                let resizeHandler = null;
+                let clickHandler = null;
+                
+                // Throttle function to limit execution rate
+                function throttle(func, limit) {
+                    let inThrottle;
+                    return function() {
+                        const args = arguments;
+                        const context = this;
+                        if (!inThrottle) {
+                            func.apply(context, args);
+                            inThrottle = true;
+                            const timeoutId = setTimeout(() => {
+                                inThrottle = false;
+                                timeoutIds.delete(timeoutId);
+                            }, limit);
+                            timeoutIds.add(timeoutId);
+                        }
+                    };
                 }
-            }, true);
+                
+                // Debounce function to delay execution
+                function debounce(func, wait) {
+                    let timeout;
+                    return function executedFunction(...args) {
+                        const later = () => {
+                            if (timeout) {
+                                timeoutIds.delete(timeout);
+                                timeout = null;
+                            }
+                            func(...args);
+                        };
+                        if (timeout) {
+                            clearTimeout(timeout);
+                            timeoutIds.delete(timeout);
+                        }
+                        timeout = setTimeout(later, wait);
+                        timeoutIds.add(timeout);
+                    };
+                }
 
-            // Prevent undefined function calls
-            window.adngin = window.adngin || function() { /* no-op */ };
-            
-            // Suppress console errors from external scripts
-            const originalConsoleError = console.error;
-            console.error = function(...args) {
-                const message = args.join(' ');
-                if (message.includes('adngin') || 
-                    message.includes('adengine') || 
-                    message.includes('btloader') ||
-                    message.includes('snigelweb')) {
-                    return; // Suppress these errors
+                // Safe timeout function that tracks IDs
+                function createTimeout(callback, delay) {
+                    const timeoutId = setTimeout(() => {
+                        timeoutIds.delete(timeoutId);
+                        callback();
+                    }, delay);
+                    timeoutIds.add(timeoutId);
+                    return timeoutId;
                 }
-                originalConsoleError.apply(console, args);
+
+                // Safe interval function that tracks IDs
+                function createInterval(callback, delay) {
+                    const intervalId = setInterval(callback, delay);
+                    timeoutIds.add(intervalId);
+                    return intervalId;
+                }
+
+                // Cleanup all timeouts and intervals
+                function clearAllTimeouts() {
+                    timeoutIds.forEach(id => {
+                        clearTimeout(id);
+                        clearInterval(id);
+                    });
+                    timeoutIds.clear();
+                }
+
+                // WeakMap for DOM element associations to prevent memory leaks
+                const copyButtonStates = new WeakMap();
+
+                function updateActiveSection(section) {
+                    if (activeSection === section) return;
+                    
+                    activeSection = section;
+                    
+                    // Use more efficient class updates
+                    requestAnimationFrame(() => {
+                        // Batch DOM updates
+                        const updates = [];
+                        
+                        // Remove active classes
+                        document.querySelectorAll('.sidebar-nav a.active, .nav-links a.active').forEach(link => {
+                            updates.push(() => link.classList.remove('active'));
+                        });
+                        
+                        document.querySelectorAll('section[id].highlighted, .api-category[id].highlighted').forEach(section => {
+                            updates.push(() => section.classList.remove('highlighted'));
+                        });
+                        
+                        // Add new active classes
+                        updates.push(() => activeSection.classList.add('highlighted'));
+                        
+                        const activeId = activeSection.id;
+                        const activeSidebarLink = document.querySelector(`.sidebar-nav a[href="#${activeId}"]`);
+                        const activeNavLink = document.querySelector(`.nav-links a[href="#${activeId}"]`);
+                        
+                        if (activeSidebarLink) {
+                            updates.push(() => activeSidebarLink.classList.add('active'));
+                        }
+                        if (activeNavLink) {
+                            updates.push(() => activeNavLink.classList.add('active'));
+                        }
+
+                        // Handle API sub-sections
+                        const apiCategories = ['hashing', 'encryption', 'signatures', 'utilities', 'checksums'];
+                        if (apiCategories.includes(activeId)) {
+                            const apiRefNavLink = document.querySelector('.nav-links a[href="#api-reference"]');
+                            if (apiRefNavLink) {
+                                updates.push(() => apiRefNavLink.classList.add('active'));
+                            }
+                        }
+
+                        // Execute all updates in batch
+                        updates.forEach(update => update());
+                    });
+                }
+
+                function detectActiveSection() {
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const windowHeight = window.innerHeight;
+                    const sections = document.querySelectorAll('section[id], .api-category[id]');
+                    
+                    let bestSection = null;
+                    let bestScore = -1;
+                    
+                    const apiCategories = ['hashing', 'encryption', 'signatures', 'utilities', 'checksums'];
+                    
+                    sections.forEach(section => {
+                        const rect = section.getBoundingClientRect();
+                        const sectionTop = rect.top + scrollTop;
+                        const sectionBottom = rect.bottom + scrollTop;
+                        const sectionHeight = rect.height;
+                        const sectionId = section.id;
+                        
+                        const activeZoneTop = scrollTop + 80;
+                        const activeZoneBottom = scrollTop + (windowHeight * 0.4);
+                        
+                        const intersectionTop = Math.max(activeZoneTop, sectionTop);
+                        const intersectionBottom = Math.min(activeZoneBottom, sectionBottom);
+                        const intersectionHeight = Math.max(0, intersectionBottom - intersectionTop);
+                        
+                        const activeZoneHeight = activeZoneBottom - activeZoneTop;
+                        const visibilityInActiveZone = intersectionHeight / activeZoneHeight;
+                        
+                        const viewportTop = scrollTop;
+                        const viewportBottom = scrollTop + windowHeight;
+                        const visibleTop = Math.max(viewportTop, sectionTop);
+                        const visibleBottom = Math.min(viewportBottom, sectionBottom);
+                        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+                        const overallVisibility = visibleHeight / sectionHeight;
+                        
+                        let score = visibilityInActiveZone * 10 + overallVisibility * 2;
+                        
+                        if (sectionTop <= activeZoneTop + 50) {
+                            score += 1;
+                        }
+                        
+                        if (sectionId === 'api-reference') {
+                            const hasVisibleApiCategory = apiCategories.some(categoryId => {
+                                const categoryElement = document.getElementById(categoryId);
+                                if (categoryElement) {
+                                    const categoryRect = categoryElement.getBoundingClientRect();
+                                    const categoryVisibility = Math.max(0, 
+                                        Math.min(windowHeight, categoryRect.bottom) - Math.max(0, categoryRect.top)
+                                    ) / categoryRect.height;
+                                    return categoryVisibility > 0.3;
+                                }
+                                return false;
+                            });
+                            
+                            if (hasVisibleApiCategory) {
+                                score *= 0.3;
+                            }
+                        }
+                        
+                        if (apiCategories.includes(sectionId) && overallVisibility > 0.2) {
+                            score += 3;
+                        }
+                        
+                        if ((visibilityInActiveZone > 0.1 || overallVisibility > 0.2) && score > bestScore) {
+                            bestScore = score;
+                            bestSection = section;
+                        }
+                    });
+                    
+                    if (bestSection && bestSection !== activeSection) {
+                        updateActiveSection(bestSection);
+                    }
+                }
+
+                // Optimized scroll handler with RAF throttling
+                scrollHandler = throttle(() => {
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+                    const scrollProgress = Math.min((scrollTop / scrollHeight) * 100, 100);
+                    
+                    requestAnimationFrame(() => {
+                        document.documentElement.style.setProperty('--scroll-progress', scrollProgress + '%');
+                        detectActiveSection();
+                    });
+                }, 16); // ~60fps
+
+                resizeHandler = debounce(() => {
+                    const sidebar = document.getElementById('sidebar');
+                    if (window.innerWidth > 1024 && sidebar && sidebar.classList.contains('mobile-open')) {
+                        sidebar.classList.remove('mobile-open');
+                    }
+                }, 250);
+
+                // Optimized click handler using event delegation
+                clickHandler = function(e) {
+                    // Handle mobile menu closing
+                    const sidebar = document.getElementById('sidebar');
+                    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+                    
+                    if (sidebar && sidebar.classList.contains('mobile-open')) {
+                        if (!sidebar.contains(e.target) && (!mobileMenuBtn || !mobileMenuBtn.contains(e.target))) {
+                            sidebar.classList.remove('mobile-open');
+                        }
+                    }
+
+                    // Handle anchor clicks with delegation
+                    const anchor = e.target.closest('a[href^="#"]');
+                    if (anchor) {
+                        e.preventDefault();
+                        const href = anchor.getAttribute('href');
+                        
+                        if (!href || href === '#') return;
+                        
+                        const target = document.querySelector(href);
+                        if (target) {
+                            updateActiveSection(target);
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                            
+                            if (sidebar && sidebar.classList.contains('mobile-open')) {
+                                sidebar.classList.remove('mobile-open');
+                            }
+                        }
+                    }
+                };
+
+                function init() {
+                    if (isInitialized) return false;
+                    
+                    // Add event listeners with proper cleanup tracking
+                    if (scrollHandler && !eventHandlers.has('scroll')) {
+                        window.addEventListener('scroll', scrollHandler, { passive: true });
+                        eventHandlers.set('scroll', scrollHandler);
+                    }
+                    
+                    if (resizeHandler && !eventHandlers.has('resize')) {
+                        window.addEventListener('resize', resizeHandler, { passive: true });
+                        eventHandlers.set('resize', resizeHandler);
+                    }
+                    
+                    if (clickHandler && !eventHandlers.has('click')) {
+                        document.addEventListener('click', clickHandler, { passive: false });
+                        eventHandlers.set('click', clickHandler);
+                    }
+
+                    // Initialize syntax highlighting
+                    if (typeof Prism !== 'undefined') {
+                        Prism.highlightAll();
+                    }
+
+                    // Initialize active section
+                    const sections = document.querySelectorAll('section[id], .api-category[id]');
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    
+                    let currentSection = document.querySelector('#overview');
+                    
+                    for (let i = 0; i < sections.length; i++) {
+                        const section = sections[i];
+                        const rect = section.getBoundingClientRect();
+                        const sectionTop = rect.top + scrollTop;
+                        
+                        if (scrollTop >= sectionTop - 150) {
+                            currentSection = section;
+                        }
+                    }
+                    
+                    if (currentSection) {
+                        updateActiveSection(currentSection);
+                    }
+
+                    isInitialized = true;
+                    return true;
+                }
+
+                function destroy() {
+                    // Remove event listeners
+                    eventHandlers.forEach((handler, type) => {
+                        if (type === 'scroll' || type === 'resize') {
+                            window.removeEventListener(type, handler);
+                        } else {
+                            document.removeEventListener(type, handler);
+                        }
+                    });
+                    eventHandlers.clear();
+
+                    // Clear all timeouts and intervals
+                    clearAllTimeouts();
+
+                    // Clear observers
+                    observers.forEach(observer => {
+                        if (observer.disconnect) {
+                            observer.disconnect();
+                        }
+                    });
+                    observers.clear();
+
+                    // Reset state
+                    activeSection = null;
+                    isInitialized = false;
+                }
+
+                return {
+                    init,
+                    destroy,
+                    updateActiveSection,
+                    createTimeout,
+                    createInterval,
+                    copyButtonStates
+                };
+            }
+
+            return {
+                getInstance: function() {
+                    if (!instance) {
+                        instance = createInstance();
+                    }
+                    return instance;
+                },
+                destroy: function() {
+                    if (instance) {
+                        instance.destroy();
+                        instance = null;
+                        isInitialized = false;
+                    }
+                }
             };
         })();
 
-        // Mobile menu functionality
+        // Global functions that interface with the singleton
+        let app = null;
+
         function toggleMobileMenu() {
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('mobile-open');
-        }
-
-        // Copy code functionality
-        function copyCode(button) {
-            const codeBlock = button.closest('.code-example').querySelector('code');
-            const text = codeBlock.textContent;
-            
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showCopySuccess(button);
-                }).catch(() => {
-                    fallbackCopyText(text, button);
-                });
-            } else {
-                fallbackCopyText(text, button);
+            if (sidebar) {
+                sidebar.classList.toggle('mobile-open');
             }
         }
 
-        function fallbackCopyText(text, button) {
+        function copyCode(button) {
+            if (!app || !button) return;
+            
+            const codeBlock = button.closest('.code-example')?.querySelector('code');
+            if (!codeBlock) return;
+            
+            const text = codeBlock.textContent;
+            
+            // Check if we already have a timeout for this button
+            const existingState = app.copyButtonStates.get(button);
+            if (existingState && existingState.timeoutId) {
+                clearTimeout(existingState.timeoutId);
+            }
+            
+            function showSuccess() {
+                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                button.style.background = 'var(--success)';
+                
+                const timeoutId = app.createTimeout(() => {
+                    button.innerHTML = 'Copy';
+                    button.style.background = 'var(--accent)';
+                    app.copyButtonStates.delete(button);
+                }, 2000);
+                
+                app.copyButtonStates.set(button, { timeoutId });
+            }
+            
+            function showError() {
+                button.innerHTML = '<i class="fas fa-times"></i> Failed';
+                button.style.background = 'var(--danger)';
+                
+                const timeoutId = app.createTimeout(() => {
+                    button.innerHTML = 'Copy';
+                    button.style.background = 'var(--accent)';
+                    app.copyButtonStates.delete(button);
+                }, 2000);
+                
+                app.copyButtonStates.set(button, { timeoutId });
+            }
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(showSuccess).catch(() => {
+                    fallbackCopyText(text, showSuccess, showError);
+                });
+            } else {
+                fallbackCopyText(text, showSuccess, showError);
+            }
+        }
+
+        function fallbackCopyText(text, onSuccess, onError) {
             const textArea = document.createElement('textarea');
             textArea.value = text;
             textArea.style.position = 'fixed';
@@ -1247,44 +1606,26 @@ print("Signature valid:", IsValid)</code></pre>
             textArea.select();
             
             try {
-                document.execCommand('copy');
-                showCopySuccess(button);
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    onSuccess();
+                } else {
+                    onError();
+                }
             } catch (err) {
                 console.error('Failed to copy text: ', err);
-                button.innerHTML = '<i class="fas fa-times"></i> Failed';
-                button.style.background = 'var(--danger)';
+                onError();
             }
             
             document.body.removeChild(textArea);
         }
 
-        // Store timeout IDs to prevent memory leaks
-        const copyTimeouts = new Map(); // Changed from WeakMap to Map for cleanup
-        
-        function showCopySuccess(button) {
-            // Clear any existing timeout for this button
-            if (copyTimeouts.has(button)) {
-                clearTimeout(copyTimeouts.get(button));
-            }
-            
-            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
-            button.style.background = 'var(--success)';
-            
-            // Store the new timeout ID
-            const timeoutId = setTimeout(() => {
-                button.innerHTML = 'Copy';
-                button.style.background = 'var(--accent)';
-                copyTimeouts.delete(button); // Clean up
-            }, 2000);
-            
-            copyTimeouts.set(button, timeoutId);
-        }
-
-        // Hash demo functionality
         function performHash() {
-            const input = document.getElementById('hash-input').value;
-            const algorithm = document.getElementById('hash-algorithm').value;
+            const input = document.getElementById('hash-input')?.value;
+            const algorithm = document.getElementById('hash-algorithm')?.value;
             const output = document.getElementById('hash-output');
+            
+            if (!input || !output) return;
             
             if (!input.trim()) {
                 output.innerHTML = '<span style="color: var(--warning)">Please enter some text to hash.</span>';
@@ -1316,10 +1657,11 @@ print("Signature valid:", IsValid)</code></pre>
             }
         }
 
-        // Base64 demo functionality
         function encodeBase64() {
-            const input = document.getElementById('base64-input').value;
+            const input = document.getElementById('base64-input')?.value;
             const output = document.getElementById('base64-output');
+            
+            if (!input || !output) return;
             
             if (!input.trim()) {
                 output.innerHTML = '<span style="color: var(--warning)">Please enter some text to encode.</span>';
@@ -1335,8 +1677,10 @@ print("Signature valid:", IsValid)</code></pre>
         }
 
         function decodeBase64() {
-            const input = document.getElementById('base64-input').value;
+            const input = document.getElementById('base64-input')?.value;
             const output = document.getElementById('base64-output');
+            
+            if (!input || !output) return;
             
             if (!input.trim()) {
                 output.innerHTML = '<span style="color: var(--warning)">Please enter base64 text to decode.</span>';
@@ -1351,324 +1695,60 @@ print("Signature valid:", IsValid)</code></pre>
             }
         }
 
-        // Prevent memory leaks from multiple event listeners
-        let isInitialized = false;
-        
-        // Dynamic scroll highlighting with smart section hierarchy handling
-        let activeSection = null;
-        let isScrolling = false;
-        let scrollTimeout;
-        let scrollProgressTimeout;
-
-        function updateActiveSection(section) {
-            if (activeSection === section) return; // Prevent unnecessary updates
+        // Optimized error prevention that doesn't accumulate
+        (function initializeErrorPrevention() {
+            'use strict';
             
-            activeSection = section;
+            if (window.errorPreventionInitialized) return;
+            window.errorPreventionInitialized = true;
             
-            // Remove active class from all sidebar links
-            document.querySelectorAll('.sidebar-nav a').forEach(link => {
-                link.classList.remove('active');
-            });
+            const originalConsoleError = console.error;
+            const suppressedErrors = ['adengine', 'btloader', 'adngin', 'uic_prov', 'snigelweb'];
             
-            // Remove active class from all nav links
-            document.querySelectorAll('.nav-links a').forEach(link => {
-                link.classList.remove('active');
-            });
-
-            // Remove highlighted class from all sections
-            document.querySelectorAll('section[id], .api-category[id]').forEach(section => {
-                section.classList.remove('highlighted');
-            });
-            
-            // Add highlighted class to current section
-            activeSection.classList.add('highlighted');
-            
-            // Add active class to current section links
-            const activeId = activeSection.id;
-            const activeSidebarLink = document.querySelector(`.sidebar-nav a[href="#${activeId}"]`);
-            const activeNavLink = document.querySelector(`.nav-links a[href="#${activeId}"]`);
-            
-            if (activeSidebarLink) {
-                activeSidebarLink.classList.add('active');
-            }
-            if (activeNavLink) {
-                activeNavLink.classList.add('active');
-            }
-
-            // Handle API sub-sections (prioritize specific categories over main API reference)
-            const apiCategories = ['hashing', 'encryption', 'signatures', 'utilities', 'checksums'];
-            if (apiCategories.includes(activeId)) {
-                const apiRefNavLink = document.querySelector('.nav-links a[href="#api-reference"]');
-                if (apiRefNavLink) {
-                    apiRefNavLink.classList.add('active');
-                }
-            }
-
-            // Handle installation sub-sections
-            if (activeId === 'installation' || activeId === 'quick-start') {
-                const installationLink = document.querySelector('.nav-links a[href="#installation"]');
-                if (installationLink) {
-                    installationLink.classList.add('active');
-                }
-            }
-        }
-
-        function detectActiveSection() {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const windowHeight = window.innerHeight;
-            const sections = document.querySelectorAll('section[id], .api-category[id]');
-            
-            let bestSection = null;
-            let bestScore = -1;
-            
-            // API categories for priority handling
-            const apiCategories = ['hashing', 'encryption', 'signatures', 'utilities', 'checksums'];
-            
-            sections.forEach(section => {
-                const rect = section.getBoundingClientRect();
-                const sectionTop = rect.top + scrollTop;
-                const sectionBottom = rect.bottom + scrollTop;
-                const sectionHeight = rect.height;
-                const sectionId = section.id;
-                
-                // Calculate how much of the section is in the "active zone" (top 30% of viewport)
-                const activeZoneTop = scrollTop + 80; // Header offset
-                const activeZoneBottom = scrollTop + (windowHeight * 0.4);
-                
-                // Calculate intersection with active zone
-                const intersectionTop = Math.max(activeZoneTop, sectionTop);
-                const intersectionBottom = Math.min(activeZoneBottom, sectionBottom);
-                const intersectionHeight = Math.max(0, intersectionBottom - intersectionTop);
-                
-                // Calculate visibility ratio in active zone
-                const activeZoneHeight = activeZoneBottom - activeZoneTop;
-                const visibilityInActiveZone = intersectionHeight / activeZoneHeight;
-                
-                // Calculate how much of the section is visible overall
-                const viewportTop = scrollTop;
-                const viewportBottom = scrollTop + windowHeight;
-                const visibleTop = Math.max(viewportTop, sectionTop);
-                const visibleBottom = Math.min(viewportBottom, sectionBottom);
-                const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-                const overallVisibility = visibleHeight / sectionHeight;
-                
-                // Scoring system
-                let score = 0;
-                
-                // Primary score: visibility in active zone
-                score += visibilityInActiveZone * 10;
-                
-                // Secondary score: overall visibility
-                score += overallVisibility * 2;
-                
-                // Bonus for sections that start near or above the active zone
-                if (sectionTop <= activeZoneTop + 50) {
-                    score += 1;
-                }
-                
-                // Special handling for API Reference vs its categories
-                if (sectionId === 'api-reference') {
-                    // Check if any API category is significantly visible
-                    const hasVisibleApiCategory = apiCategories.some(categoryId => {
-                        const categoryElement = document.getElementById(categoryId);
-                        if (categoryElement) {
-                            const categoryRect = categoryElement.getBoundingClientRect();
-                            const categoryVisibility = Math.max(0, 
-                                Math.min(windowHeight, categoryRect.bottom) - Math.max(0, categoryRect.top)
-                            ) / categoryRect.height;
-                            return categoryVisibility > 0.3;
-                        }
-                        return false;
-                    });
-                    
-                    // Reduce score for main API reference if categories are visible
-                    if (hasVisibleApiCategory) {
-                        score *= 0.3;
-                    }
-                }
-                
-                // Prioritize API categories when they're visible
-                if (apiCategories.includes(sectionId) && overallVisibility > 0.2) {
-                    score += 3;
-                }
-                
-                // Must have some visibility to be considered
-                if ((visibilityInActiveZone > 0.1 || overallVisibility > 0.2) && score > bestScore) {
-                    bestScore = score;
-                    bestSection = section;
-                }
-            });
-            
-            if (bestSection && bestSection !== activeSection) {
-                updateActiveSection(bestSection);
-            }
-        }
-
-        // Consolidated scroll handler to prevent memory leaks
-        function handleScroll() {
-            isScrolling = true;
-            
-            // Clear existing timeouts to prevent accumulation
-            if (scrollTimeout) {
-                clearTimeout(scrollTimeout);
-            }
-            if (scrollProgressTimeout) {
-                clearTimeout(scrollProgressTimeout);
-            }
-            
-            // Handle scroll progress indicator
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const scrollProgress = Math.min((scrollTop / scrollHeight) * 100, 100);
-            document.documentElement.style.setProperty('--scroll-progress', scrollProgress + '%');
-            
-            // Handle section detection
-            scrollTimeout = setTimeout(() => {
-                detectActiveSection();
-                isScrolling = false;
-            }, 50);
-        }
-
-        // Single scroll event listener to prevent duplicates
-        function initializeScrollHandler() {
-            if (!isInitialized) {
-                window.addEventListener('scroll', handleScroll, { passive: true });
-            }
-        }
-
-        // Initialize all event listeners (only once)
-        function initializeEventListeners() {
-            if (isInitialized) return; // Prevent duplicate initialization
-            
-            // Smooth scrolling for navigation
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
+            window.addEventListener('error', function(e) {
+                if (e.filename && suppressedErrors.some(error => e.filename.includes(error))) {
                     e.preventDefault();
-                    const href = this.getAttribute('href');
-                    
-                    if (!href || href === '#') return;
-                    
-                    const target = document.querySelector(href);
-                    if (target) {
-                        updateActiveSection(target);
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                        
-                        // Close mobile menu if open
-                        const sidebar = document.getElementById('sidebar');
-                        if (sidebar && sidebar.classList.contains('mobile-open')) {
-                            sidebar.classList.remove('mobile-open');
-                        }
-                    }
-                });
-            });
-
-            // Hero button handlers
-            document.querySelectorAll('.hero-actions .btn').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    const href = this.getAttribute('href');
-                    if (href && href.startsWith('#')) {
-                        e.preventDefault();
-                        const target = document.querySelector(href);
-                        if (target) {
-                            updateActiveSection(target);
-                            target.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'start'
-                            });
-                        }
-                    }
-                });
-            });
-
-            // Mobile menu handlers
-            document.addEventListener('click', function(e) {
-                const sidebar = document.getElementById('sidebar');
-                const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-                
-                if (sidebar && sidebar.classList.contains('mobile-open')) {
-                    if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                        sidebar.classList.remove('mobile-open');
-                    }
+                    return false;
                 }
-            });
+            }, true);
 
-            // Window resize handler
-            window.addEventListener('resize', function() {
-                const sidebar = document.getElementById('sidebar');
-                if (window.innerWidth > 1024 && sidebar && sidebar.classList.contains('mobile-open')) {
-                    sidebar.classList.remove('mobile-open');
+            window.adngin = window.adngin || function() { /* no-op */ };
+            
+            console.error = function(...args) {
+                const message = args.join(' ');
+                if (!suppressedErrors.some(error => message.includes(error))) {
+                    originalConsoleError.apply(console, args);
                 }
-            });
+            };
+        })();
 
-            // Initialize scroll handler
-            initializeScrollHandler();
-            
-            isInitialized = true;
+        // Initialize app when DOM is ready
+        function initializeApp() {
+            app = AppManager.getInstance();
+            app.init();
         }
 
-        // Initialize active section on page load
-        function initializeActiveSection() {
-            const sections = document.querySelectorAll('section[id], .api-category[id]');
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            
-            // Start with Overview as default
-            let currentSection = document.querySelector('#overview');
-            
-            for (let i = 0; i < sections.length; i++) {
-                const section = sections[i];
-                const rect = section.getBoundingClientRect();
-                const sectionTop = rect.top + scrollTop;
-                
-                // Check if we've scrolled past the start of this section
-                if (scrollTop >= sectionTop - 150) {
-                    currentSection = section;
-                }
-            }
-            
-            if (currentSection) {
-                updateActiveSection(currentSection);
-            }
+        // Proper cleanup on page unload
+        function cleanupApp() {
+            AppManager.destroy();
+            app = null;
         }
 
-        // Main initialization function
-        function initialize() {
-            // Initialize syntax highlighting
-            if (typeof Prism !== 'undefined') {
-                Prism.highlightAll();
-            }
-            
-            // Initialize all event listeners
-            initializeEventListeners();
-            
-            // Initialize active section
-            initializeActiveSection();
-        }
-
-        // Cleanup function to prevent memory leaks on page unload
-        function cleanup() {
-            // Clear all timeouts
-            if (scrollTimeout) clearTimeout(scrollTimeout);
-            if (scrollProgressTimeout) clearTimeout(scrollProgressTimeout);
-            
-            // Clear copy button timeouts
-            copyTimeouts.forEach((timeoutId) => {
-                clearTimeout(timeoutId);
-            });
-            copyTimeouts.clear();
-        }
-
-        // Initialize on page load and DOM ready
+        // Initialize
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initialize);
+            document.addEventListener('DOMContentLoaded', initializeApp);
         } else {
-            initialize();
+            initializeApp();
         }
 
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', cleanup);
+        // Cleanup
+        window.addEventListener('beforeunload', cleanupApp);
+        window.addEventListener('pagehide', cleanupApp);
+
+        // Additional cleanup for SPA environments
+        if (typeof window.addEventListener === 'function') {
+            window.addEventListener('unload', cleanupApp);
+        }
     </script>
 </body>
 </html>
